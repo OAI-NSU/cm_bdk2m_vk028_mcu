@@ -136,8 +136,6 @@ int8_t ib_run_transaction(typeIBStruct* ib_ptr, uint8_t dev_id, uint8_t f_code, 
 		}
 		if (ib_ptr->uart.packet_ready(ib_ptr->uart_inst) == 0){
 			//
-			printf("n");
-			//
 			ib_ptr->nans_status |= (1<<dev_id);
 			ib_ptr->nans_counter += 1;
 		}
@@ -173,8 +171,6 @@ int8_t ib_run_transaction(typeIBStruct* ib_ptr, uint8_t dev_id, uint8_t f_code, 
 			case(MB_UART_RX_STATUS_EXCEPTION):
 				ib_ptr->error_status |= (1<<dev_id);
 				ib_ptr->error_counter += 1;
-				//
-			printf("e");
 				//
 				for (i = 0; i < ib_ptr->rx_len; i++){
 					// printf("%02X", ib_ptr->rx_data[i]);

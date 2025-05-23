@@ -45,7 +45,10 @@ void cm_init(
 				uint16_t frame_type)
 {
 	uint8_t load_cfg_state=0;
+	printf("%s: cm init start\n", now());
+	//
 	fr_mem_init(&cm_ptr->mem, FR_MEM_TYPE_WR_TO_RD_WITH_PROT_AREA);
+	printf("\t%s: frame mem init\n", now());
 	//
 	cm_ptr->mko_rt_ptr = mko_rt_ptr;
 	cm_ptr->mko_bc_ptr = mko_bc_ptr;
@@ -67,7 +70,7 @@ void cm_init(
 	cm_ptr->frame_type = frame_type;
 	//
 	load_cfg_state = cm_load_cfg(cm_ptr);	// загрузка конфигурации из энергонезависимой памяти
-	printf("%s: cm load cfg state <%d> (-1 - Error)\n", now(), load_cfg_state);
+	printf("\t%s: cm load cfg state <%d> (-1 - Error)\n", now(), load_cfg_state);
 	//
 	cm_constant_mode_ena(cm_ptr, 0x00);
 	//

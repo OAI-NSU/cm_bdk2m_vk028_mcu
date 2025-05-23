@@ -25,6 +25,8 @@ volatile uint16_t  				      MKORT_Buff[32*32]         __attribute__((aligned (3
 int8_t mko_rt_init(typeMKORTStruct *mko_rt_ptr, uint8_t mko_addr) 
 {
   //
+  printf("%s: mko_rt init start \n",  now());
+  //
   mko_rt_ptr->addr = (mko_addr == 0) ? mko_rt_get_addr_from_gpio(mko_rt_ptr) : mko_addr;
   mko_rt_ptr->error = 0x00;
   mko_rt_ptr->error_cnt = 0x00;
@@ -90,7 +92,7 @@ int8_t mko_rt_init(typeMKORTStruct *mko_rt_ptr, uint8_t mko_addr)
   }
   else{
     //TODO: разобраться как привязать адрес из ядра МПИ и заменить прямое чтение с GPIO
-    printf("%s: mko_rt init !! error !! incorrect address \n",  now());
+    printf("%s: !!! mko_rt init finish with error: incorrect address \n",  now());
     return 0;
   }
   //

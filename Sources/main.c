@@ -22,11 +22,11 @@
 //***Общие настройки***//
 
 //версия прошивки
-#define CM_SW_VERSION 			  "0.1"
+#define CM_SW_VERSION 			  "0.2"
 // номер устройства
 #define FRAME_DEV_ID 			    214 // (214 - отработочный, 216 - 1й летный, 217 - 2й летный) //TODO: уточнить номера устройств
 // параметры МКО
-#define MKO_ADDRESS_DEFAULT 	0 // 0 - адрес берется с разъема, не 0 - адрес МКО (29 - по умолчанию)
+#define MKO_ADDRESS_DEFAULT 	29 // 0 - адрес берется с разъема, не 0 - адрес МКО (29 - по умолчанию)
 
 //
 extern uint32_t SystemCoreClock;  /*100_000_000*/
@@ -139,26 +139,34 @@ void __main_process_registration_box(void)
 */
 void __main_base_init(void)
 {
-	printf("CM Init: start\n");
+	printf("\nCM Init: start\n");
 	// отключение периферии
-  clock_init(0);
+  
   //
-  printf("\nSW v%s\n", CM_SW_VERSION);
+  printf("SW v%s\n", CM_SW_VERSION);
 	printf("\n______ \\_(o_O)_/ ______\n\n");
+	printf("CM_BDK2M (1921VK028 based) frame_dev_id <%d>, mko_addr_default <%d> \n", FRAME_DEV_ID, MKO_ADDRESS_DEFAULT);
+	//
+	clock_init(0);
+	printf("%s: clock init \n", now());
 	Timers_Init();
   clock_set_time_s(0);
-  Timer_Delay(0, 555);
-	printf("%s: CM_BDK2M (1921VK028 based) frame_dev_id <%d>, mko_addr_default <%d> \n", now(), FRAME_DEV_ID, MKO_ADDRESS_DEFAULT);
-	// архивация памяти
-	fr_mem_format(&cm.mem);
+  Timer_Delay(0, 100);
+	printf("%s: clock time after 100 ms delay (OK - is about 0.1 s)\n", now());
 	// инициализация структур
   oai_cm_gpio_init(&gpio);
+  printf("%s: gpio init\n", now());
   mko_bc_init(&mko_bc);
+  printf("%s: mko_bc init\n", now());
   mko_rt_init(&mko_rt, MKO_ADDRESS_DEFAULT);
   ib_init(&ib);
+  printf("%s: internal bus init\n", now());
   stm_init(&stm, &gpio);
+  printf("%s: stm init\n", now());
   adc_init(&adc);
+  printf("%s: adc init\n", now());
   pwr_init(&pwr, &adc, &gpio);
+  printf("%s: pwr init\n", now());
   //
 	cm_init(  &cm, 
             CM,
@@ -216,6 +224,8 @@ void cm_mko_command_interface_handler(typeCMModel *cm_ptr)
               break;
             case (CMD_INIT):
               __main_base_init();
+              // архивация памяти
+              fr_mem_format(&cm.mem);
               fr_mem_set_rd_ptr(&cm.mem, 0);
               fr_mem_set_wr_ptr(&cm.mem, 0);
               cm.ctrl.rst_cnter = 0;

@@ -69,8 +69,6 @@ void mko_bc_init(typeMKOBCStruct *mko_ptr)
   mko_ptr->error_cnt = 0x00;
   //
   mko_ptr->inst = (MILSTD_TypeDef_Simple*)MILSTD1;
-  //
-  printf("%s: mko_bc init finish\n",  now());
 }
 
 /**

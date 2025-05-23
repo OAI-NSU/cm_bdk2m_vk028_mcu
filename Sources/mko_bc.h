@@ -4,7 +4,6 @@
 #include "main.h"
 #include "CM4/K1921VK028.h"
 #include "system_K1921VK028.h"
-#include "clock.h"
 #include "timers.h"
 
 #define MKO_BC_BUS_A 0
