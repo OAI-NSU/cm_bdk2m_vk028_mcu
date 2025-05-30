@@ -148,9 +148,9 @@ int8_t tp_task_run(typeTPStruct* tp_ptr, uint8_t process_num, uint32_t* task_tim
   * @brief  обработка вызова в прерывании в 1мс таймере
 	* @param  tp_ptr указатель на структуру управления
   */
-void tp_timer_handler(typeTPStruct* tp_ptr)
+void tp_timer_handler(typeTPStruct* tp_ptr, uint32_t tp_handler_step_time_us)
 {
-	tp_ptr->time.full_us += 100;
+	tp_ptr->time.full_us += tp_handler_step_time_us;
 }
 
 /**

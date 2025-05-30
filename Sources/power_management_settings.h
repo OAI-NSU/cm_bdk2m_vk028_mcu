@@ -11,8 +11,6 @@
 #include "main.h"
 #include "pwr_channel.h"
 
-#define PWR_ON_DELAY 300      //! задержка на включение каждого следующего устройства при включении питания
-
 /**
   * @brief  определяем номера каналов, последнее поле - количество каналов
 */
@@ -28,8 +26,8 @@ typedef enum PWR_CH
   * @brief  распределение каналов в соответствии с enum PWR_CH
   * @note   длина совпадает с PWR_CH_NUMBER
   */
-#define PWR_CAL_RES_SHUNT_OHM   {1.0f,     1.0f,      1.0f,     1.0f,     1.0f,     1.0f,     1.0f,     1.0f,      1.0f,     1.0f,     1.0f,    1.0f}
-#define PWR_CAL_FB_SHUNT_OHM    {5.11E3f,  5.11E3f,   5.11E3f,  5.11E3f,  5.11E3f,  5.11E3f,  5.11E3f,  5.11E3f,   5.11E3f,  5.11E3f,  5.11E3f, 5.11E3f}
+#define PWR_CAL_RES_SHUNT_OHM   {0.25f,    0.5f,      0.5f,    4.7f,    4.7f,    4.7f,    4.7f,    4.7f,     4.7f,    4.7f,    4.7f,   0.25f}
+#define PWR_CAL_FB_SHUNT_OHM    {5.11E3f,  5.0E4f,    5.0E4f,  1.0E4f,  1.0E4f,  1.0E4f,  1.0E4f,  1.0E4f,   1.0E4f,  1.0E4f,  1.0E4f, 5.11E3f}
 
 #define PWR_CURRENT_BOUND       {3*650, 3*60, 3*60, 3*60, 3*60, 3*60, 3*60, 3*60, 3*60, 3*60, 3*60, 3*60} // граница тока в мА для каждого канала //TODO: уточнить границы тока для каждого канала
 
@@ -37,7 +35,7 @@ typedef enum PWR_CH
 #define PWR_AUTO_CTRL           {0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1}  // указываем те каналы, которые мы может отключать или включать автоматически
 #define PWR_DOUBLE_OUT          {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}  // указываем те каналы, которые имеют дублированный выход для полукомплектов с холодным резервированием
 
-#define PWR_DEFAULT_STATE       {PWR_CH_ON, PWR_CH_ON, PWR_CH_ON, PWR_CH_ON, PWR_CH_ON, PWR_CH_ON, PWR_CH_ON, PWR_CH_ON, PWR_CH_ON, PWR_CH_OFF}  // изначальное состояние каналов
+#define PWR_DEFAULT_STATE       {PWR_CH_OFF, PWR_CH_OFF, PWR_CH_OFF, PWR_CH_ON, PWR_CH_ON, PWR_CH_ON, PWR_CH_ON, PWR_CH_ON, PWR_CH_ON, PWR_CH_ON}  // изначальное состояние каналов
 #define PWR_DEFAULT_HALF_SET    {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}   // изначальное состояние каналов
 #define PWR_DEFAULT_DELAY       {0, 0, 0, 200, 200, 200, 200, 200, 200, 200, 200, 2000}  // задержка на включение каждого следующего устройства при включении питания (мс)
 
@@ -51,7 +49,7 @@ typedef enum PWR_CH
 // GPIO определяются номером в общей структуре управления io CM
 
 #define PWR_GPIO_PORT_CFG {\
-                            {OUT_NU, 2, OUT_NU, OUT_NU, OUT_NU}, \
+                            {OUT_NU, OUT_NU, OUT_NU, OUT_NU, OUT_NU}, \
                             {OUT_NU, OUT_NU, OUT_NU, OUT_NU, OUT_NU}, \
                             {OUT_NU, OUT_NU, OUT_NU, OUT_NU, OUT_NU}, \
                             {OUT_NU, 4, OUT_NU, OUT_NU, OUT_NU}, \

@@ -10,11 +10,11 @@
 #include "cyclogramma.h"
 #include "clock.h"
 
-#define PWR_PROCESS_PERIOD 200
+#define PWR_PROCESS_PERIOD      200
 
-#define PWR_CH_HS_NOT_CHANGED 0xFF
+#define PWR_CH_HS_NOT_CHANGED   0xFF
 
-#define PWR_CMD_FIFO_SIZE			(16)
+#define PWR_CMD_FIFO_SIZE			  (64)  //TODO: проверить размер FIFO
 
 #pragma pack(push, 2)
 
@@ -29,6 +29,8 @@ typedef union{
   uint8_t raw[6];
 } typeCMD;
 
+#pragma pack(pop)
+
 typedef struct{
 	typeCMD cmd_array[PWR_CMD_FIFO_SIZE];
 	typeCMD last_cmd;
@@ -38,6 +40,7 @@ typedef struct{
 	uint32_t rec_lost;
 	uint8_t ena;
 } type_PWR_CMD_Fifo;
+
 
 /**
   * @brief  структура управления каналом питания
@@ -58,6 +61,7 @@ typedef struct
   uint16_t queue_delay_ms;
   uint16_t queue_delay_cnter_ms;
   uint8_t queue_delay_flag;
+  uint8_t gap;
   //
   uint32_t error_cnter;
   //
@@ -65,7 +69,7 @@ typedef struct
   uint64_t last_call_time_us;
 }typePower;
 
-#pragma pack(pop)
+
 //
 void pwr_init(typePower* pwr_ptr, typeADCStruct* adc_ptr, type_GPIO_OAI_cm *io_ptr);
 // task planer function

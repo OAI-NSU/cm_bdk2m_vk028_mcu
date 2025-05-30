@@ -41,4 +41,7 @@ void WDT_Reset(void)
 void WDT_IRQHandler(void)
 {
   printf("\n!!! WARNING !!! WDT timer is finish first time\n");
+  __DSB();
+  while(1){
+  }
 }

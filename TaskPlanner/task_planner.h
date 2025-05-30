@@ -97,7 +97,7 @@ void __tp_set_default_parameters(typeTPStruct* tp_ptr);
 int8_t tp_process_registration(typeTPStruct* tp_ptr, int8_t (*action) (void*, uint64_t, typeProcessInterfaceStruct*), void* control_struct_ptr, uint32_t sh_mem_offset, uint32_t sh_mem_len);
 void tp_handler(typeTPStruct* tp_ptr);
 int8_t tp_task_run(typeTPStruct* tp_ptr, uint8_t process_num, uint32_t* task_time_us);
-void tp_timer_handler(typeTPStruct* tp_ptr);
+void tp_timer_handler(typeTPStruct* tp_ptr, uint32_t tp_handler_step_time_us);
 //
 void __time_recalculate(typeTimeStruct* time_ptr);
 uint8_t __time_str_repr(typeTimeStruct* time_ptr, char* time_string);

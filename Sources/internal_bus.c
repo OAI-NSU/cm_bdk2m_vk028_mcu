@@ -90,7 +90,8 @@ void ib_reset_parameters(typeIBStruct* ib_ptr)
   */
 int8_t ib_run_transaction(typeIBStruct* ib_ptr, uint8_t dev_id, uint8_t f_code, uint16_t reg_addr, uint16_t reg_cnt, uint16_t* data)
 {
-	uint8_t timeout = 0, i = 0;
+	uint32_t timeout = 0;
+	//uint32_t i = 0;	
   	// обнуляем переменные
 	memset((uint8_t*)&ib_ptr->tx_frame, 0x00, sizeof(typeModBusFrameStruct));
   	// формирование запроса
@@ -161,9 +162,9 @@ int8_t ib_run_transaction(typeIBStruct* ib_ptr, uint8_t dev_id, uint8_t f_code, 
 				ib_ptr->nans_status |= (1<<dev_id);
 				ib_ptr->nans_counter += 1;
 				//
-				for (i = 0; i < ib_ptr->rx_len; i++){
+				//for (i = 0; i < ib_ptr->rx_len; i++){
 					// printf("%02X", ib_ptr->rx_data[i]);
-				}
+				//}
 				// printf(":%d\n", ib_ptr->rx_len);
 				return -1;
 			case(MB_UART_CRC_ERROR):
@@ -172,9 +173,9 @@ int8_t ib_run_transaction(typeIBStruct* ib_ptr, uint8_t dev_id, uint8_t f_code, 
 				ib_ptr->error_status |= (1<<dev_id);
 				ib_ptr->error_counter += 1;
 				//
-				for (i = 0; i < ib_ptr->rx_len; i++){
+				//for (i = 0; i < ib_ptr->rx_len; i++){
 					// printf("%02X", ib_ptr->rx_data[i]);
-				}
+				//}
 				// printf(":%d\n", ib_ptr->rx_len);
 				return -1;
 			default:

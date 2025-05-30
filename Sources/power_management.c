@@ -65,13 +65,13 @@ void pwr_init(typePower* pwr_ptr, typeADCStruct* adc_ptr, type_GPIO_OAI_cm *io_p
 	}
 	// задание очереди инициализации каналов питания
 	for (i=0; i<PWR_CH_NUMBER; i++){
-		pwr_queue_put_cmd(pwr_ptr, 0, i, 0, PWR_CH_HS_NOT_CHANGED);
+		pwr_queue_put_cmd(pwr_ptr, 0, i, PWR_CH_OFF, PWR_CH_HS_NOT_CHANGED);
 	}
 	for (i=0; i<PWR_CH_NUMBER; i++){
 		pwr_queue_put_cmd(pwr_ptr, def_delay[i], i, def_state[i], def_hs[i]);
 	}
 	//
-	printf("%s: pwr init finish: ch_num <%d>\n",  now(),PWR_CH_NUMBER);
+	printf("%s: pwr init finish: ch_num <%d>\n", now(), PWR_CH_NUMBER);
 	//
 	pwr_ptr->call_interval_us = 0;
 	pwr_ptr->last_call_time_us = 0;
@@ -81,7 +81,7 @@ void pwr_init(typePower* pwr_ptr, typeADCStruct* adc_ptr, type_GPIO_OAI_cm *io_p
 
 /**
   * @brief  функция для запуска в планировщике задач обработки каналов питания
-	* @param  ctrl_struct указатель на програмную модель устройства
+	* @param  ctrl_struct указатель на программную модель устройства
 	* @param  time_ms глобальное время
   */
 int8_t pwr_process_tp(void* ctrl_struct, uint64_t time_us, typeProcessInterfaceStruct* interface)
@@ -254,7 +254,7 @@ uint8_t pwr_queue_get_cmd(typePower* pwr_ptr, typeCMD *cmd)
 		pwr_ptr->queue_delay_ms = q_cmd.field.delay_ms;
 		pwr_ptr->queue_delay_flag = 1;
 		//
-		// printf("pwr_queue_get_cmd: ch_num<%d> hs<%d> state<%d>\n", q_cmd.field.num, q_cmd.field.half_set, q_cmd.field.state);
+			// printf("pwr_queue_get_cmd: ch_num<%d> hs<%d> state<%d>\n", q_cmd.field.num, q_cmd.field.half_set, q_cmd.field.state);
 		*cmd = q_cmd;
 		return 1;
 	}
@@ -352,6 +352,7 @@ int8_t fifo_read(type_PWR_CMD_Fifo* fifo_ptr, typeCMD* cmd)
 	if(fifo_ptr->rec_num){
 		memcpy((uint8_t *)cmd, (uint8_t*)&fifo_ptr->cmd_array[fifo_ptr->rd_ptr], sizeof(typeCMD));
 		if(++fifo_ptr->rd_ptr >= PWR_CMD_FIFO_SIZE) fifo_ptr->rd_ptr = 0;
+		fifo_ptr->last_cmd = *cmd;
 		fifo_update(fifo_ptr);
 		return 1;
 	}

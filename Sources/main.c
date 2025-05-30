@@ -22,7 +22,7 @@
 //***Общие настройки***//
 
 //версия прошивки
-#define CM_SW_VERSION 			  "0.2"
+#define CM_SW_VERSION 			  "0.3"
 // номер устройства
 #define FRAME_DEV_ID 			    214 // (214 - отработочный, 216 - 1й летный, 217 - 2й летный) //TODO: уточнить номера устройств
 // параметры МКО
@@ -386,8 +386,9 @@ void ADC_SEQ0_CallBack(void)
   for(i=0; i<ADC_CHANNEL_NUM; i++)  adc.data[i] = ADC->SEQ[0].SFIFO; // (первое чтение - пустое)
 }
 
-void SysTick_Handler(void) {
-  tp_timer_handler(&tp);
+void SysTick_Handler(void) 
+{
+  tp_timer_handler(&tp, 1000);
 }
 
 void INT_PORT_CallBack(GPIO_TypeDef *port, uint8_t line)
@@ -405,4 +406,24 @@ void INT_PORT_CallBack(GPIO_TypeDef *port, uint8_t line)
 void MILSTD0_IRQHandler(void)
 {
   mko_rt_irq_rx_callback(&mko_rt);
+}
+
+void HardFault_Handler(void)
+{
+  __DSB();
+  while(1){
+  }
+}
+
+void MemManage_Handler(void)
+{
+  __DSB();
+  while(1){
+  }
+}
+void BusFault_Handler(void)
+{
+  __DSB();
+  while(1){
+  }
 }

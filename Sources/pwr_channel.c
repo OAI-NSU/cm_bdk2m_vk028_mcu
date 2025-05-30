@@ -191,7 +191,7 @@ void pwr_ch_half_set_choosing(typePowerCh* pwr_ch_ptr, uint8_t half_set)
 }
 
 /**
- * @brief управления каналами, 
+ * @brief управления каналами, с 
  * 
  * @param pwr_ch_ptr указатель на модель управления каналом
  */
@@ -311,7 +311,7 @@ void _pwr_ch_pulse_set_default(typePowerCh* pwr_ch_ptr)
 void _pwr_ch_flag_set_on_off(typePowerCh* pwr_ch_ptr, uint8_t mode)
 {
 	if (pwr_ch_ptr->type == PWR_CH_FLAG){
-		if (mode & 0x01 == PWR_CH_ON) {
+		if ((mode & 0x01) == PWR_CH_ON) {
 			gpio_set(&pwr_ch_ptr->io_ptr->io[pwr_ch_ptr->flag_ctrl.io_ena_num], 1);
 			gpio_set(&pwr_ch_ptr->io_ptr->io[pwr_ch_ptr->flag_ctrl.io_inh_num], 0);
 		}

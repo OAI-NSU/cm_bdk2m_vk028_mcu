@@ -4,9 +4,9 @@ uint8_t UARTRxBuff[4][UART_RX_BUFF_SIZE];
 uint16_t UARTRxBuffTail[4], UARTRxBuffHead[4];
 uint8_t UARTTxBuff[4][UART_TX_BUFF_SIZE];
 uint16_t UARTTxBuffTail[4], UARTTxBuffHead[4];
-int UARTTxCompleteFlg[4] = {0, 0, 0, 0};
-int UARTForceTxIrq = 0;
-int FrameGapRx[4], FrameGapTx[4];
+volatile int UARTTxCompleteFlg[4] = {0, 0, 0, 0};
+volatile int UARTForceTxIrq = 0;
+volatile int FrameGapRx[4], FrameGapTx[4];
 
 void uart_IRQHandler(UART_TypeDef *pUART_ref);
 
@@ -22,7 +22,7 @@ int uart_get_num(UART_TypeDef *pUART_ref) {
 }
 
 void uart_tx_enable(UART_TypeDef *pUART_ref, int enable) {
-  /*��� ���*/
+  /*без эха*/
   if(enable)  pUART_ref->CR &= ~UART_CR_RXE_Msk;
   else  pUART_ref->CR |= UART_CR_RXE_Msk;
 }
@@ -51,12 +51,12 @@ void UART_Init(UART_TypeDef *pUART_ref, uint32_t baudrate) {
       NVIC_EnableIRQ(UART1_IRQn);
       break;
     case 2: 
-      GPIOK->DENSET = (1<<10) | (1<<11);
-      GPIOK->PULLMODE |= (1<<11*2);
-      GPIOK->ALTFUNCSET = (1<<10) | (1<<11);
-      GPIOK->ALTFUNCNUM1 |= (4<<(10-8)*4) | (4<<(11-8)*4);
-      RCU->UARTCFG[2].UARTCFG = uartcfg;  
-      NVIC_EnableIRQ(UART2_IRQn);
+      // GPIOK->DENSET = (1<<10) | (1<<11);
+      // GPIOK->PULLMODE |= (1<<11*2);
+      // GPIOK->ALTFUNCSET = (1<<10) | (1<<11);
+      // GPIOK->ALTFUNCNUM1 |= (4<<(10-8)*4) | (4<<(11-8)*4);
+      // RCU->UARTCFG[2].UARTCFG = uartcfg;  
+      // NVIC_EnableIRQ(UART2_IRQn);
       break;
     // case 3:  
     //   GPIOK->DENSET = (1<<15) | (1<<14);
@@ -280,7 +280,7 @@ void UART3_IRQHandler() {
 
 void TMR3_IRQHandler() {
   int i;
-  TMR3->INTSTATUS = TMR_INTSTATUS_INT_Msk;
+   TMR3->INTSTATUS = TMR_INTSTATUS_INT_Msk;
   for(i=0; i<4; i++) {
     if(FrameGapRx[i]) FrameGapRx[i]--;
     if(FrameGapTx[i]) FrameGapTx[i]--;

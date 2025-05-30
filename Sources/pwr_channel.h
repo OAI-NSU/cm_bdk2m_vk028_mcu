@@ -11,18 +11,17 @@
  * @brief типы каналов по способу включения/отключения
  */
 
-#define PWR_CH_CTRL_NU  0  //! функция отключения/включения не реализована
-#define PWR_CH_FLAG     1  //! функция отключения/включения реализована установкой сигнала в постоянное значение
-#define PWR_CH_PULSE    2  //! функция отключения/включения реализована подачей импульса переключения состояния
-#define PWR_CH_DV_CTRL  3  //! функция отключения/включения и контроль тока реализован через схему с 4-мя пинами и одним выбором
+#define PWR_CH_CTRL_NU        0  //! функция отключения/включения не реализована
+#define PWR_CH_FLAG           1  //! функция отключения/включения реализована установкой сигнала в постоянное значение
+#define PWR_CH_PULSE          2  //! функция отключения/включения реализована подачей импульса переключения состояния
+#define PWR_CH_DV_CTRL        3  //! функция отключения/включения и контроль тока реализован через схему с 4-мя пинами и одним выбором
 
 #define PWR_CH_PULSE_TIME_MS  40  //! длительность импульса включения/отключения для типа канала 2
-#define PWR_CH_CTRL_TIME_MS   500  //! длительность импульса включения/отключения для типа канала 2
+#define PWR_CH_CTRL_TIME_MS   500  //! длительность импульса включения/отключения для типа канала 3
 
-#define PWR_CH_OFF 0
-#define PWR_CH_ON 1
+#define PWR_CH_OFF            0
+#define PWR_CH_ON             1
 
-#pragma pack(push, 2)
 
 /**
   * @brief  структура переменных, используемых в режиме флага (1 - вкл, 0 - откл или наоборот)
@@ -96,8 +95,6 @@ typedef struct
   float current_fp_mA;    //! значение тока в мА
   uint16_t current_mA;    //! значение тока в мА
 }typePowerCh;
-
-#pragma pack(pop)
 
 //
 int8_t pwr_ch_init(typePowerCh* pwr_ch_ptr, const char *alias, uint8_t type, uint8_t auto_control, uint8_t hs_ch_mode, float bound_mA, float A, float B, type_GPIO_OAI_cm *io_ptr, typeADCStruct *adc_ptr, uint8_t* io_cfg, uint8_t* adc_cfg);

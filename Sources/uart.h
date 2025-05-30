@@ -5,13 +5,14 @@
 #include "CM4/K1921VK028.h"
 #include "system_K1921VK028.h"
 
-#define UART_RX_BUFF_SIZE     2048  
-#define UART_TX_BUFF_SIZE     2048
+#define UART_RX_BUFF_SIZE     512    
+#define UART_TX_BUFF_SIZE     512
 #define FRAME_GAP_RX_US       1800
+#define TIMER_LOAD_US         100
 #define FRAME_GAP_RX_CNT      (FRAME_GAP_RX_US / TIMER_LOAD_US)
 #define FRAME_GAP_TX_US       2500
 #define FRAME_GAP_TX_CNT      (FRAME_GAP_TX_US / TIMER_LOAD_US)
-#define TIMER_LOAD_US         100
+
 
 void UART_Init(UART_TypeDef *pUART_ref, uint32_t baudrate);
 int UART_Rx(UART_TypeDef *pUART_ref, uint8_t *bt);
