@@ -59,9 +59,11 @@ void oai_cm_gpio_init(type_GPIO_OAI_cm* oai_io_ptr)
     gpio_init(&oai_io_ptr->stm[num], stm_port[num], stm_line[num], stm_type[num], stm_irq[num], stm_def_state[num]);
   }
   //
-  //
-  NVIC_EnableIRQ(GPIOL_IRQn);
-  NVIC_EnableIRQ(GPIOM_IRQn);
+  // включение прерываний только по их наличию
+  if(oai_io_ptr->irq_info_num){
+    NVIC_EnableIRQ(GPIOL_IRQn);
+    NVIC_EnableIRQ(GPIOM_IRQn);
+  }
 }
 
 /**
@@ -102,11 +104,12 @@ void gpio_init(type_SINGLE_GPIO *gpio_ptr, GPIO_TypeDef* port, uint8_t line, uin
   // включение цифрового пина
   gpio_ptr->port->DENSET = (1<<(gpio_ptr->line));
   // переделка пина в выход
-  if (type == OUT) gpio_ptr->port->OUTENSET = (1<<(gpio_ptr->line));
+  if ((type == OUT) || (type == OPEN_DRAIN)) gpio_ptr->port->OUTENSET = (1<<(gpio_ptr->line));
+  if (type == OPEN_DRAIN) gpio_ptr->port->OUTMODE |= (1<<(gpio_ptr->line*2));
   // установка подтяжки
-  if (type == IN) gpio_ptr->port->PULLMODE |= ((0x01)<<(2*gpio_ptr->line));
+  if ((type == IN) || (type == OPEN_DRAIN)) gpio_ptr->port->PULLMODE |= ((0x01)<<(2*gpio_ptr->line));
   // установка состояния по умолчанию
-  if (type == OUT) gpio_ptr->port->DATAOUTSET = ((state & 0x01)<<(gpio_ptr->line));
+  if ((type == OUT) || (type == OPEN_DRAIN)) gpio_ptr->port->DATAOUTSET = ((state & 0x01)<<(gpio_ptr->line));
   // инициализация работы с прерываниями
   if ((irq == GPIO_IRQ_ON) && (type == IN)) {
     gpio_ptr->port->INTENSET = (1<<(gpio_ptr->line));

@@ -154,7 +154,7 @@
           <Type>0</Type>
           <LineNumber>413</LineNumber>
           <EnabledFlag>0</EnabledFlag>
-          <Address>4516</Address>
+          <Address>12744</Address>
           <ByteObject>0</ByteObject>
           <HtxType>0</HtxType>
           <ManyObjects>0</ManyObjects>
@@ -262,6 +262,16 @@
           <WinNumber>1</WinNumber>
           <ItemText>tp.time.second</ItemText>
         </Ww>
+        <Ww>
+          <count>19</count>
+          <WinNumber>1</WinNumber>
+          <ItemText>GPIOL</ItemText>
+        </Ww>
+        <Ww>
+          <count>20</count>
+          <WinNumber>1</WinNumber>
+          <ItemText>mpp</ItemText>
+        </Ww>
       </WatchWindow1>
       <WatchWindow2>
         <Ww>
@@ -288,6 +298,11 @@
           <count>4</count>
           <WinNumber>2</WinNumber>
           <ItemText>dv[3].test_impact_cnter</ItemText>
+        </Ww>
+        <Ww>
+          <count>5</count>
+          <WinNumber>2</WinNumber>
+          <ItemText>adc</ItemText>
         </Ww>
       </WatchWindow2>
       <MemoryWindow1>

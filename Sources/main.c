@@ -22,7 +22,7 @@
 //***Общие настройки***//
 
 //версия прошивки
-#define CM_SW_VERSION 			  "0.3"
+#define CM_SW_VERSION 			  "0.4"
 // номер устройства
 #define FRAME_DEV_ID 			    214 // (214 - отработочный, 216 - 1й летный, 217 - 2й летный) //TODO: уточнить номера устройств
 // параметры МКО
@@ -147,6 +147,7 @@ void __main_base_init(void)
 	printf("\n______ \\_(o_O)_/ ______\n\n");
 	printf("CM_BDK2M (1921VK028 based) frame_dev_id <%d>, mko_addr_default <%d> \n", FRAME_DEV_ID, MKO_ADDRESS_DEFAULT);
 	//
+	oai_cm_gpio_init(&gpio);
 	clock_init(0);
 	printf("%s: clock init \n", now());
 	Timers_Init();
@@ -154,7 +155,6 @@ void __main_base_init(void)
   Timer_Delay(0, 100);
 	printf("%s: clock time after 100 ms delay (OK - is about 0.1 s)\n", now());
 	// инициализация структур
-  oai_cm_gpio_init(&gpio);
   printf("%s: gpio init\n", now());
   mko_bc_init(&mko_bc);
   printf("%s: mko_bc init\n", now());
@@ -377,6 +377,47 @@ void cm_mko_command_interface_handler(typeCMModel *cm_ptr)
     case 3:
       break;
   }
+}
+
+/**
+ * @brief обработчик отладочных команд через ВШ
+ * 
+ * @param cm_ptr указатель на объект управления ЦМ
+ */
+void cm_dbg_ib_command_handler(typeCMModel* cm_ptr)
+{
+	typeFrameStruct frame;
+	//
+	if (cm_ptr->ib_ptr->command_frame_flag){
+		cm_ptr->ib_ptr->command_frame_flag = 0;
+		if (cm_ptr->ib_ptr->command_frame.dev_id == CM_SELF_MB_ID){
+			if (cm_ptr->ib_ptr->command_frame.f_code == MB_F_CODE_16){
+				printf("CM DBG CMD: ID <%d>, FC <%d>, RA <%d> \n", cm_ptr->ib_ptr->command_frame.dev_id, cm_ptr->ib_ptr->command_frame.f_code, cm_ptr->ib_ptr->command_frame.reg_addr);
+				switch(cm_ptr->ib_ptr->command_frame.reg_addr){
+					case CM_DBG_CMD_SWITCH_ON_OFF:
+						cm_ptr->ib_ptr->global_dbg_flag = __REV16(cm_ptr->ib_ptr->command_frame.data[0]) & 0x01;
+						break;
+					case CM_DBG_CMD_CM_RESET:
+						printf("Rst by WDG ");
+						Timer_Delay(1, 100000);
+						printf("Error\n");
+						break;
+					case CM_DBG_CMD_CM_CHECK_MEM:
+						fr_mem_check(&cm_ptr->mem);
+						break;
+					case CM_DBG_CMD_CM_INIT:
+						if (__REV16(cm_ptr->ib_ptr->command_frame.data[0]) == 0xAA55) __main_base_init();
+						break;
+					case CM_DBG_CMD_ARCH_REQUEST:
+						if (__REV16(cm_ptr->ib_ptr->command_frame.data[0]) == 0x0000){
+							fr_mem_read_data_frame(&cm_ptr->mem, (uint8_t*)&frame);
+							mko_rt_write_to_subaddr(cm_ptr->mko_rt_ptr, CM_MKO_SA_ARCH_READ_CM, (uint16_t*)&frame);
+						}
+						break;
+				}
+			}
+		}
+	}
 }
 
 void ADC_SEQ0_CallBack(void)

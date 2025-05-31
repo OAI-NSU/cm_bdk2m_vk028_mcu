@@ -18,6 +18,7 @@
 
 #define IN 0
 #define OUT 1
+#define OPEN_DRAIN 2
 
 #define GPIO_IRQ_ON 1
 #define GPIO_IRQ_OFF 0
@@ -96,9 +97,9 @@ enum stm_func_enum
                   }     
 
 // настройки конфигурации управляющих сигналов для IO: OUT - выход, IN - вход
-#define GPIO_IN_OUT { OUT, OUT, OUT, OUT, \
-                      OUT, OUT, OUT, OUT, \
-                      OUT, OUT, OUT, IN,  \
+#define GPIO_IN_OUT { OUT, OUT, OUT, OPEN_DRAIN, \
+                      OPEN_DRAIN, OPEN_DRAIN, OPEN_DRAIN, OPEN_DRAIN, \
+                      OPEN_DRAIN, OPEN_DRAIN, OPEN_DRAIN, IN,  \
                       IN, IN, IN, IN,     \
                       IN, IN, IN, IN,     \
                       IN, IN, IN          \
@@ -114,9 +115,9 @@ enum stm_func_enum
                       }
 
 // настройки начального состояния выводов
-#define GPIO_DEF_STATE {0, 0, 0, 0,\
-                        0, 0, 0, 0,\
-                        0, 0, 0, 0,\
+#define GPIO_DEF_STATE {0, 0, 0, 1,\
+                        1, 1, 1, 1,\
+                        1, 1, 1, 0,\
                         0, 0, 0, 0,\
                         0, 0, 0, 0,\
                         0, 0, 0 \

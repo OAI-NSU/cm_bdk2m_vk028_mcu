@@ -10,7 +10,7 @@
 #include "cyclogramma.h"
 #include "clock.h"
 
-#define PWR_PROCESS_PERIOD      200
+#define PWR_PROCESS_PERIOD      100
 
 #define PWR_CH_HS_NOT_CHANGED   0xFF
 
