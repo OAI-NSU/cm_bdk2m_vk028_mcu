@@ -178,7 +178,7 @@ typedef  struct
 	uint32_t write_ptr;			//+10
 	uint32_t read_ptr;			//+14
 	//
-	uint8_t reserve[34];  		//+18
+	uint8_t reserve[30];  		//+22
 }typeCfgReport;      //52
 
 typedef union{
@@ -273,7 +273,7 @@ void cm_init(
 				uint16_t frame_type
 			);
 void cm_reset_parameters(typeCMModel* cm_ptr);
-uint8_t cm_load_cfg(typeCMModel* cm_ptr);
+int8_t cm_load_cfg(typeCMModel* cm_ptr);
 void cm_save_cfg(typeCMModel* cm_ptr);
 void cm_set_cfg(typeCMModel* cm_ptr);
 void cm_get_cfg(typeCMModel* cm_ptr);

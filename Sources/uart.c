@@ -105,7 +105,7 @@ int UART_Rx(UART_TypeDef *pUART_ref, uint8_t *bt) {
 
 int UART_RxPacket(UART_TypeDef *pUART_ref, uint8_t *buff, uint16_t buff_size) {
   int uart_num, i;
-  uint16_t rx_size, tot_size;
+  uint16_t rx_size, tot_size = 0;
   uart_num = uart_get_num(pUART_ref);
   tot_size = 0;
   if(FrameGapRx[uart_num] == 0) {
@@ -133,7 +133,7 @@ int UART_RxPacket(UART_TypeDef *pUART_ref, uint8_t *buff, uint16_t buff_size) {
 int8_t UART_RxFullPacket(UART_TypeDef *pUART_ref, uint8_t *buff, uint16_t* rx_len) 
 {
   int uart_num, i;
-  uint16_t rx_size, tot_size;
+  uint16_t rx_size = 0, tot_size = 0;
   uart_num = uart_get_num(pUART_ref);
   if(FrameGapRx[uart_num] == 0) {
     rx_size = (UARTRxBuffHead[uart_num] - UARTRxBuffTail[uart_num]) & (UART_RX_BUFF_SIZE - 1);

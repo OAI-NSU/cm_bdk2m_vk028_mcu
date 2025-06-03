@@ -25,7 +25,7 @@ void ib_init(typeIBStruct* ib_ptr)
 	ib_ptr->uart.get_packet = UART_RxFullPacket;
 	ib_ptr->uart.packet_in_waiting = UART_PacketInWaiting;
 	ib_ptr->uart.packet_ready = UART_PacketReady;
-	ib_ptr->uart.init(ib_ptr->uart_inst, 115200);
+	ib_ptr->uart.init(ib_ptr->uart_inst, IB_UART_BAUDRATE);
 }
 
 /**

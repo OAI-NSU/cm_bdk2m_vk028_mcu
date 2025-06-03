@@ -14,32 +14,47 @@
 
 #define PWR_CH_HS_NOT_CHANGED   0xFF
 
-#define PWR_CMD_FIFO_SIZE			  (64)  //TODO: проверить размер FIFO
+/**
+  * @brief  состояния обработки команд питания
+*/
+typedef enum
+{
+  PWR_CMD_STATE_IDLE = 0,
+  PWR_CMD_STATE_READY,
+  PWR_CMD_STATE_PROCESS
+} type_PWR_CH_CMD_STATE;
 
 #pragma pack(push, 2)
 
+/**
+ * @brief слепок команды, которая передается в буфер управления каналами питания
+ * 
+ */
 typedef union{
   struct{
-    uint16_t delay_ms;
-    uint8_t state;
-    uint8_t num;
-    uint8_t half_set;
-    uint8_t gap;
+    uint8_t process_state;    // состояния обработки команды  (type_PWR_CH_CMD_STATE)
+    uint8_t num;              // Номер канала, к которому относится команда
+    uint8_t state;            // Желаемое состояние канала (например, ВКЛ/ВЫКЛ)
+    uint8_t half_set;         // Номер полукомплекта (0 - первый, 1 - второй, 0xFF - не используется). Используется только для каналов с полукомплектом
+    uint16_t delay_ms;        // Задержка в миллисекундах перед выполнением команды
   }field;
-  uint8_t raw[6];
-} typeCMD;
+  uint8_t raw[6];             // Сырой вид команды для прямой манипуляции
+} type_PWR_CMD;
 
 #pragma pack(pop)
 
+/**
+ * @brief  структура для организации буфера команд управления каналами питания,
+ * на один канал - только одна команда, которая перезаписывается при поступлении новой команды
+ */
 typedef struct{
-	typeCMD cmd_array[PWR_CMD_FIFO_SIZE];
-	typeCMD last_cmd;
-	uint8_t wr_ptr, rd_ptr;
-	uint8_t rec_num, rec_num_max;
-	uint32_t rec_full;
-	uint32_t rec_lost;
-	uint8_t ena;
-} type_PWR_CMD_Fifo;
+  type_PWR_CMD   cmd_array[PWR_CH_NUMBER];    // массив команд по одной на канал
+  type_PWR_CMD   last_cmd;                    // последняя команда, которая была обработана
+  uint32_t  cmd_rem;                          // количество оставшихся команд в буфере
+  uint32_t  cmd_cnt;                          // общее полное количество команд, переданных в буфер
+  uint32_t  cmd_lost;                         // количество потерянных команд из-за перетирания новыми командами
+  uint8_t   last_cmd_num;
+} type_PWR_CMD_BUFFER;
 
 
 /**
@@ -54,13 +69,16 @@ typedef struct
   uint32_t status;
   uint32_t state;
   uint32_t half_set;
+  // состояния по умолчанию для применения после инициализации
+  uint8_t def_state[PWR_CH_NUMBER];
+  uint8_t def_hs[PWR_CH_NUMBER];
+  uint16_t def_delay[PWR_CH_NUMBER];
   // отчет по потреблению
   float curr_report_fp[PWR_CH_NUMBER];
   // организация очереди команд
-  type_PWR_CMD_Fifo cmd_fifo;
-  uint16_t queue_delay_ms;
-  uint16_t queue_delay_cnter_ms;
-  uint8_t queue_delay_flag;
+  type_PWR_CMD_BUFFER cmd_buffer;
+  uint8_t initialisation_flag;
+  uint32_t initialisation_timeout_ms;
   uint8_t gap;
   //
   uint32_t error_cnter;
@@ -82,15 +100,16 @@ void pwr_status_reset_by_num(typePower* pwr_ptr, uint8_t num);
 void pwr_set_state(typePower* pwr_ptr, uint32_t state);
 void pwr_set_bound(typePower* pwr_ptr, uint8_t num, uint16_t bound);
 void pwr_create_report(typePower* pwr_ptr);
+void pwr_change_default_state(typePower* pwr_ptr, uint32_t state);
 //
-uint8_t pwr_queue_process(typePower* pwr_ptr, uint32_t interval_ms);
-uint8_t pwr_queue_get_cmd(typePower* pwr_ptr, typeCMD *cmd);
+uint8_t pwr_queue_get_cmd(typePower* pwr_ptr, type_PWR_CMD *cmd);
 void pwr_queue_put_cmd(typePower* pwr_ptr, uint16_t delay_ms, uint8_t pwr_ch_num, uint8_t state, uint8_t half_set);
 // static
 void __pwr_calc_current_coefficients(float r_sh, float r_fb, float* curr_a_ptr, float* curr_b_ptr);
 //
-int8_t fifo_init(type_PWR_CMD_Fifo* fifo_ptr);
-int8_t fifo_write(type_PWR_CMD_Fifo* fifo_ptr, typeCMD* cmd);
-int8_t fifo_read(type_PWR_CMD_Fifo* fifo_ptr, typeCMD* cmd);
-void fifo_update(type_PWR_CMD_Fifo* fifo_ptr);
+int8_t pwr_buffer_init(typePower* pwr_ptr);
+int8_t pwr_buffer_write(typePower* pwr_ptr, type_PWR_CMD cmd);
+type_PWR_CMD pwr_buffer_read(typePower* pwr_ptr);
+int32_t pwr_buffer_process(typePower* pwr_ptr, uint32_t interval_ms);
+
 #endif

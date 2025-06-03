@@ -41,10 +41,7 @@ void pwr_init(typePower* pwr_ptr, typeADCStruct* adc_ptr, type_GPIO_OAI_cm *io_p
 	//
 	pwr_ptr->global_busy = 0x00;
 	//
-	fifo_init(&pwr_ptr->cmd_fifo);
-	pwr_ptr->queue_delay_ms = 0;
-	pwr_ptr->queue_delay_cnter_ms = 0;
-	pwr_ptr->queue_delay_flag = 0;
+	pwr_buffer_init(pwr_ptr);
 	//
 	pwr_ptr->error_cnter = 0;
 	//
@@ -64,17 +61,40 @@ void pwr_init(typePower* pwr_ptr, typeADCStruct* adc_ptr, type_GPIO_OAI_cm *io_p
 		pwr_ch_init(&pwr_ptr->ch[i], alias,  type_arr[i], auto_control_arr[i], double_out[i], bound_arr[i], curr_a, curr_b, io_ptr, adc_ptr, io_cfg[i], adc_cfg[i]);
 	}
 	// задание очереди инициализации каналов питания
+	pwr_ptr->initialisation_flag = 1;
+	pwr_ptr->initialisation_timeout_ms = 0;
 	for (i=0; i<PWR_CH_NUMBER; i++){
 		pwr_queue_put_cmd(pwr_ptr, 0, i, PWR_CH_OFF, PWR_CH_HS_NOT_CHANGED);
 	}
+	// заполнение параметров для управления каналами при включении
 	for (i=0; i<PWR_CH_NUMBER; i++){
-		pwr_queue_put_cmd(pwr_ptr, def_delay[i], i, def_state[i], def_hs[i]);
+		pwr_ptr->def_state[i] 	= def_state[i];
+		pwr_ptr->def_hs[i] 		= def_hs[i];
+		pwr_ptr->def_delay[i] 	= def_delay[i];
 	}
 	//
 	printf("%s: pwr init finish: ch_num <%d>\n", now(), PWR_CH_NUMBER);
 	//
 	pwr_ptr->call_interval_us = 0;
 	pwr_ptr->last_call_time_us = 0;
+}
+
+void pwr_set_default(typePower* pwr_ptr){
+
+	for (uint32_t i=0; i<PWR_CH_NUMBER; i++){
+		pwr_queue_put_cmd(	pwr_ptr, 
+							pwr_ptr->def_delay[i], 
+							i, 
+							pwr_ptr->def_state[i], 
+							pwr_ptr->def_hs[i] );
+	}
+}
+
+void pwr_change_default_state(typePower* pwr_ptr, uint32_t state)
+{
+	for (uint32_t i=0; i<PWR_CH_NUMBER; i++){
+		pwr_ptr->def_state[i] = (state >> i) & 0x01;
+	}
 }
 
 // Task planner process handler
@@ -92,10 +112,21 @@ int8_t pwr_process_tp(void* ctrl_struct, uint64_t time_us, typeProcessInterfaceS
 		pwr_ptr->last_call_time_us = time_us;
 		// USER CODE BEGIN
 		//
+		pwr_buffer_process(pwr_ptr, pwr_ptr->call_interval_us/1000);
 		pwr_synchronize_state_and_status(pwr_ptr);
 		pwr_create_report(pwr_ptr);
 		//
 		pwr_step_process(pwr_ptr, pwr_ptr->call_interval_us/1000);
+		//
+		if (pwr_ptr->initialisation_flag){
+			if(pwr_ptr->initialisation_timeout_ms < PWR_INIT_TIMEOUT_MS){
+				pwr_ptr->initialisation_timeout_ms += pwr_ptr->call_interval_us/1000;
+			}
+			else{
+				pwr_ptr->initialisation_flag = 0;
+				pwr_set_default(pwr_ptr);
+			}
+		}
 		// USER CODE END
 		return 1;
 	}
@@ -110,7 +141,7 @@ int8_t pwr_process_tp(void* ctrl_struct, uint64_t time_us, typeProcessInterfaceS
   */
 void pwr_step_process(typePower* pwr_ptr, uint32_t interval_ms)
 {
-	typeCMD queue_cmd;
+	type_PWR_CMD queue_cmd;
 	volatile uint8_t status;
 	// обработка состояний каналов
 	for(uint8_t num=0; num<PWR_CH_NUMBER; num++){
@@ -127,17 +158,15 @@ void pwr_step_process(typePower* pwr_ptr, uint32_t interval_ms)
 	for(uint8_t num=0; num<PWR_CH_NUMBER; num++){
 		pwr_ptr->global_busy |= (pwr_ch_get_busy(&pwr_ptr->ch[num])) << num;
 	}
-	// проверка таймаута взятия новой команды из fifo
-	if (pwr_queue_process(pwr_ptr, interval_ms)){
-		if(pwr_ptr->global_busy == 0){
-			if(pwr_queue_get_cmd(pwr_ptr, &queue_cmd)){
-				//
-				if (queue_cmd.field.num < PWR_CH_NUMBER){
-					if (queue_cmd.field.half_set != PWR_CH_HS_NOT_CHANGED) pwr_ch_half_set_choosing(&pwr_ptr->ch[queue_cmd.field.num], queue_cmd.field.half_set);
-					pwr_ch_on_off(&pwr_ptr->ch[queue_cmd.field.num], queue_cmd.field.state);
-				}
-				else pwr_ptr->error_cnter += 1;
+	// проверка наличи команды на обработку
+	if(pwr_ptr->global_busy == 0){
+		if(pwr_queue_get_cmd(pwr_ptr, &queue_cmd)){
+			//
+			if (queue_cmd.field.num < PWR_CH_NUMBER){
+				if (queue_cmd.field.half_set != PWR_CH_HS_NOT_CHANGED) pwr_ch_half_set_choosing(&pwr_ptr->ch[queue_cmd.field.num], queue_cmd.field.half_set);
+				pwr_ch_on_off(&pwr_ptr->ch[queue_cmd.field.num], queue_cmd.field.state);
 			}
+			else pwr_ptr->error_cnter += 1;
 		}
 	}
 }
@@ -217,44 +246,17 @@ void pwr_create_report(typePower* pwr_ptr)
 }
 
 /**
- * @brief обработка очереди
+ * @brief взятие команды из буфера
  * 
  * @param pwr_ptr 
- * @param interval_ms 
- * @return uint8_t 1 - можно забирать следующую команду, 0 - ждем
+ * @param cmd указатель на слот для сохранения команды
+ * @return uint8_t 1 - есть команда на обработку, 0 - нет команды на обработку
  */
-uint8_t pwr_queue_process(typePower* pwr_ptr, uint32_t interval_ms)
+uint8_t pwr_queue_get_cmd(typePower* pwr_ptr, type_PWR_CMD *cmd)
 {
-	if(pwr_ptr->queue_delay_flag){
-		pwr_ptr->queue_delay_cnter_ms += interval_ms;
-		if(pwr_ptr->queue_delay_cnter_ms >= pwr_ptr->queue_delay_ms){
-			pwr_ptr->queue_delay_cnter_ms = 0;
-			pwr_ptr->queue_delay_ms = 0;
-			pwr_ptr->queue_delay_flag = 0;
-		}
-		return 0;
-	}
-	else{
-		return 1;
-	}
-}
-
-/**
- * @brief взятие команды из очереди и запуск ожидания следующего шага
- * 
- * @param pwr_ptr 
- * @param cmd 
- * @return uint8_t 
- */
-uint8_t pwr_queue_get_cmd(typePower* pwr_ptr, typeCMD *cmd)
-{
-	typeCMD q_cmd;
-	if(fifo_read(&pwr_ptr->cmd_fifo, &q_cmd)){
-		pwr_ptr->queue_delay_cnter_ms = 0;
-		pwr_ptr->queue_delay_ms = q_cmd.field.delay_ms;
-		pwr_ptr->queue_delay_flag = 1;
-		//
-			// printf("pwr_queue_get_cmd: ch_num<%d> hs<%d> state<%d>\n", q_cmd.field.num, q_cmd.field.half_set, q_cmd.field.state);
+	type_PWR_CMD q_cmd;
+	q_cmd = pwr_buffer_read(pwr_ptr);
+	if(q_cmd.field.process_state == PWR_CMD_STATE_READY){
 		*cmd = q_cmd;
 		return 1;
 	}
@@ -274,17 +276,16 @@ uint8_t pwr_queue_get_cmd(typePower* pwr_ptr, typeCMD *cmd)
  */
 void pwr_queue_put_cmd(typePower* pwr_ptr, uint16_t delay_ms, uint8_t pwr_ch_num, uint8_t state, uint8_t half_set)
 {
-	typeCMD q_cmd;
+	type_PWR_CMD q_cmd;
 	q_cmd.field.delay_ms = delay_ms;
 	q_cmd.field.state = state;
 	q_cmd.field.num = pwr_ch_num;
 	q_cmd.field.half_set = half_set;
-	if (fifo_write(&pwr_ptr->cmd_fifo, &q_cmd)){
+	q_cmd.field.process_state = PWR_CMD_STATE_PROCESS;
+	if (pwr_buffer_write(pwr_ptr, q_cmd) == 1){
 		//
 	}
 	else pwr_ptr->error_cnter += 1;
-	//
-	// printf("pwr_queue_put_cmd: ch_num<%d> hs<%d> state<%d>\n", q_cmd.field.num, q_cmd.field.half_set, q_cmd.field.state);
 }
 
 // static
@@ -305,14 +306,14 @@ void __pwr_calc_current_coefficients(float r_sh, float r_fb, float* curr_a_ptr, 
 //
 
 /**
- * @brief Инициализация fifo команд управления
+ * @brief Инициализация буфера команд управления
  * 
  * @param fifo_ptr 
  * @return int8_t 
  */
-int8_t fifo_init(type_PWR_CMD_Fifo* fifo_ptr)
+int8_t pwr_buffer_init(typePower* pwr_ptr)
 {
-	memset((uint8_t*)fifo_ptr, 0x00, sizeof(type_PWR_CMD_Fifo));
+	memset((uint8_t*)&pwr_ptr->cmd_buffer, 0x00, sizeof(type_PWR_CMD_BUFFER));
 	return 0;
 }
 
@@ -322,43 +323,54 @@ int8_t fifo_init(type_PWR_CMD_Fifo* fifo_ptr)
  * @param rx_frame_ptr 
  * @return int8_t 1 - ОК, 0 - записано, но с потерей пакета из-за переполнения
  */
-int8_t fifo_write(type_PWR_CMD_Fifo* fifo_ptr, typeCMD* cmd)
+int8_t pwr_buffer_write(typePower* pwr_ptr, type_PWR_CMD cmd)
 {
-	uint8_t ret_val = 1;
-	memcpy((uint8_t*)&fifo_ptr->cmd_array[fifo_ptr->wr_ptr], (uint8_t *)cmd, sizeof(typeCMD));
-	fifo_ptr->rec_full++;
+	int8_t ret_val = 1;
+	uint8_t ch_num = cmd.field.num;
 	//
-	if((++fifo_ptr->wr_ptr) >= PWR_CMD_FIFO_SIZE) fifo_ptr->wr_ptr = 0;
-	//
-	if (fifo_ptr->wr_ptr == fifo_ptr->rd_ptr){
-		if(++fifo_ptr->rd_ptr >= PWR_CMD_FIFO_SIZE) fifo_ptr->rd_ptr = 0;
-		fifo_ptr->rec_lost++;
-		ret_val = 0;
+	if(cmd.field.num < PWR_CH_NUMBER){
+		if(pwr_ptr->cmd_buffer.cmd_array[ch_num].field.process_state != PWR_CMD_STATE_IDLE){
+			ret_val = 0;  // происходит перезапись неисполненной команды
+			pwr_ptr->cmd_buffer.cmd_lost++;
+		}
+		pwr_ptr->cmd_buffer.cmd_cnt++;
+		pwr_ptr->cmd_buffer.cmd_array[ch_num] = cmd;
+	}
+	else{
+		ret_val = -1;
 	}
 	//
-	fifo_update(fifo_ptr);
 	return ret_val;
 }
 
 /**
- * @brief чтение данных из fifo для принятых данных
+ * @brief взятие команды из буфера
  * 
- * @param cmd_ptr 
- * @param rx_frame_ptr 
- * @return int8_t 1 - ОК, 0 - нет данных
+ * @param pwr_ptr 
+ * @return type_PWR_CMD команда для исполнения: если need_to_process == 0, то выполнять команду не нужно
  */
-int8_t fifo_read(type_PWR_CMD_Fifo* fifo_ptr, typeCMD* cmd)
+type_PWR_CMD pwr_buffer_read(typePower* pwr_ptr)
 {
-	if(fifo_ptr->rec_num){
-		memcpy((uint8_t *)cmd, (uint8_t*)&fifo_ptr->cmd_array[fifo_ptr->rd_ptr], sizeof(typeCMD));
-		if(++fifo_ptr->rd_ptr >= PWR_CMD_FIFO_SIZE) fifo_ptr->rd_ptr = 0;
-		fifo_ptr->last_cmd = *cmd;
-		fifo_update(fifo_ptr);
-		return 1;
+	uint32_t i;
+	type_PWR_CMD ret_cmd;
+	//
+	memset(ret_cmd.raw, 0x00, sizeof(type_PWR_CMD));
+	//
+	for(i=0; i<PWR_CH_NUMBER; i++){
+		if(pwr_ptr->cmd_buffer.cmd_array[pwr_ptr->cmd_buffer.last_cmd_num].field.process_state == PWR_CMD_STATE_READY){
+			ret_cmd = pwr_ptr->cmd_buffer.cmd_array[pwr_ptr->cmd_buffer.last_cmd_num];
+			pwr_ptr->cmd_buffer.last_cmd = ret_cmd;
+			pwr_ptr->cmd_buffer.cmd_array[pwr_ptr->cmd_buffer.last_cmd_num].field.process_state = PWR_CMD_STATE_IDLE;
+			//
+			break;
+		}
+		else{
+			//
+		}
+		// переменная для организации перебора команд. Если все команды выполнены, то возвращаем структуру с полем need_to_process = 0
+		pwr_ptr->cmd_buffer.last_cmd_num = (pwr_ptr->cmd_buffer.last_cmd_num < PWR_CH_NUMBER) ? (pwr_ptr->cmd_buffer.last_cmd_num+1) : (0);
 	}
-	else{
-		return 0;
-	}
+	return ret_cmd;
 }
 
 /**
@@ -366,10 +378,35 @@ int8_t fifo_read(type_PWR_CMD_Fifo* fifo_ptr, typeCMD* cmd)
  * 
  * @param cmd_ptr 
  */
-void fifo_update(type_PWR_CMD_Fifo* fifo_ptr)
+int32_t pwr_buffer_process(typePower* pwr_ptr, uint32_t interval_ms)
 {
-	fifo_ptr->rec_num = (fifo_ptr->wr_ptr >= fifo_ptr->rd_ptr) 	? (fifo_ptr->wr_ptr - fifo_ptr->rd_ptr) 
-																: (PWR_CMD_FIFO_SIZE - (fifo_ptr->rd_ptr - fifo_ptr->wr_ptr));
-	fifo_ptr->rec_num_max = (fifo_ptr->rec_num > fifo_ptr->rec_num_max) ? fifo_ptr->rec_num : fifo_ptr->rec_num_max;
+	uint32_t remain_cmd = 0;
+	//
+	for(uint32_t i=0; i<PWR_CH_NUMBER; i++){
+		switch (pwr_ptr->cmd_buffer.cmd_array[i].field.process_state){
+			case PWR_CMD_STATE_PROCESS:
+				if (pwr_ptr->cmd_buffer.cmd_array[i].field.delay_ms <= interval_ms){
+					pwr_ptr->cmd_buffer.cmd_array[i].field.delay_ms = 0;
+					pwr_ptr->cmd_buffer.cmd_array[i].field.process_state = PWR_CMD_STATE_READY;
+				}
+				else{
+					pwr_ptr->cmd_buffer.cmd_array[i].field.delay_ms -= interval_ms;
+				}
+				remain_cmd++;
+				break;
+			case PWR_CMD_STATE_READY:
+				remain_cmd++;
+				break;
+			case PWR_CMD_STATE_IDLE:
+				//
+				break;
+			default:
+				//
+				break;
+		}
+	}
+	pwr_ptr->cmd_buffer.cmd_rem = remain_cmd;
+	//
+	return remain_cmd;
 }
 

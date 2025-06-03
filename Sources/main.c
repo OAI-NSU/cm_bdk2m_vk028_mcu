@@ -22,9 +22,9 @@
 //***Общие настройки***//
 
 //версия прошивки
-#define CM_SW_VERSION 			  "0.4"
+#define CM_SW_VERSION 			  "0.5"
 // номер устройства
-#define FRAME_DEV_ID 			    214 // (214 - отработочный, 216 - 1й летный, 217 - 2й летный) //TODO: уточнить номера устройств
+#define FRAME_DEV_ID 			    218 // (218 - отработочный)
 // параметры МКО
 #define MKO_ADDRESS_DEFAULT 	29 // 0 - адрес берется с разъема, не 0 - адрес МКО (29 - по умолчанию)
 
@@ -165,7 +165,7 @@ void __main_base_init(void)
   printf("%s: stm init\n", now());
   adc_init(&adc);
   printf("%s: adc init\n", now());
-  pwr_init(&pwr, &adc, &gpio);
+  pwr_init(&pwr, &adc, &gpio); 
   printf("%s: pwr init\n", now());
   //
 	cm_init(  &cm, 

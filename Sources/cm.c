@@ -44,7 +44,7 @@ void cm_init(
 				char* ver_str, 
 				uint16_t frame_type)
 {
-	uint8_t load_cfg_state=0;
+	int8_t load_cfg_state=0;
 	printf("%s: cm init start\n", now());
 	//
 	fr_mem_init(&cm_ptr->mem, FR_MEM_TYPE_WR_TO_RD_WITH_PROT_AREA);
@@ -71,6 +71,11 @@ void cm_init(
 	//
 	load_cfg_state = cm_load_cfg(cm_ptr);	// загрузка конфигурации из энергонезависимой памяти
 	printf("\t%s: cm load cfg state <%d> (-1 - Error)\n", now(), load_cfg_state);
+	// передача информации в дочерние структуры
+	// управление каналами питания: TODO: перенести данную инициализацию в pwr_management.c
+	if(load_cfg_state >= 0) {
+		pwr_change_default_state(cm_ptr->pwr_ptr, cm_ptr->loaded_cfg.cfg.body.power_state);
+	}
 	//
 	cm_constant_mode_ena(cm_ptr, 0x00);
 	//
@@ -139,7 +144,7 @@ void cm_reset_parameters(typeCMModel* cm_ptr)
   * @brief  функция загрузки параметров из памяти
   * @param  cm_ptr указатель на структуру управления
   */
-uint8_t cm_load_cfg(typeCMModel* cm_ptr)
+int8_t cm_load_cfg(typeCMModel* cm_ptr)
 {
 	typeCfgFrameUnion cfg;
 	int8_t cfg_frame_load_status = 0;
@@ -147,7 +152,7 @@ uint8_t cm_load_cfg(typeCMModel* cm_ptr)
 	cfg_frame_load_status = fr_mem_param_load(&cm_ptr->mem, (uint8_t*)&cfg);
 	if (cfg_frame_load_status < 0){
 		cm_set_clear_status(cm_ptr, CM_STATUS_CFG_LOADED, 0);
-		return 0;
+		return cfg_frame_load_status;
 	}
 	else{
 		memcpy((uint8_t*)&cm_ptr->loaded_cfg, (uint8_t*)&cfg, sizeof(typeCfgFrameUnion));

@@ -10,7 +10,7 @@
 #include "task_planner.h"
 
 // дефайны для переменных
-#define IB_UART_BAUDRATE            115200
+#define IB_UART_BAUDRATE            125000
 
 #define IB_PROCESS_PERIOD           100
 //

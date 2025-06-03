@@ -154,7 +154,7 @@
           <Type>0</Type>
           <LineNumber>413</LineNumber>
           <EnabledFlag>0</EnabledFlag>
-          <Address>12744</Address>
+          <Address>12756</Address>
           <ByteObject>0</ByteObject>
           <HtxType>0</HtxType>
           <ManyObjects>0</ManyObjects>
@@ -164,6 +164,22 @@
           <Filename>D:\YandexDisk\Work\Microcontrolers\1921Р’Рљ028\cm_bdk2m_vk028_mcu\Sources\main.c</Filename>
           <ExecCommand></ExecCommand>
           <Expression>\\cm_bdk2m_vk028_mcu\Sources/main.c\413</Expression>
+        </Bp>
+        <Bp>
+          <Number>1</Number>
+          <Type>0</Type>
+          <LineNumber>277</LineNumber>
+          <EnabledFlag>1</EnabledFlag>
+          <Address>0</Address>
+          <ByteObject>0</ByteObject>
+          <HtxType>0</HtxType>
+          <ManyObjects>0</ManyObjects>
+          <SizeOfObject>0</SizeOfObject>
+          <BreakByAccess>0</BreakByAccess>
+          <BreakIfRCount>0</BreakIfRCount>
+          <Filename>.\Sources\uart.c</Filename>
+          <ExecCommand></ExecCommand>
+          <Expression></Expression>
         </Bp>
       </Breakpoint>
       <WatchWindow1>
@@ -255,20 +271,15 @@
         <Ww>
           <count>17</count>
           <WinNumber>1</WinNumber>
-          <ItemText>pwr.cmd_fifo.last_cmd.field</ItemText>
+          <ItemText>tp.time.second</ItemText>
         </Ww>
         <Ww>
           <count>18</count>
           <WinNumber>1</WinNumber>
-          <ItemText>tp.time.second</ItemText>
-        </Ww>
-        <Ww>
-          <count>19</count>
-          <WinNumber>1</WinNumber>
           <ItemText>GPIOL</ItemText>
         </Ww>
         <Ww>
-          <count>20</count>
+          <count>19</count>
           <WinNumber>1</WinNumber>
           <ItemText>mpp</ItemText>
         </Ww>
@@ -303,6 +314,36 @@
           <count>5</count>
           <WinNumber>2</WinNumber>
           <ItemText>adc</ItemText>
+        </Ww>
+        <Ww>
+          <count>6</count>
+          <WinNumber>2</WinNumber>
+          <ItemText>UARTRxBuff</ItemText>
+        </Ww>
+        <Ww>
+          <count>7</count>
+          <WinNumber>2</WinNumber>
+          <ItemText>UARTTxBuff</ItemText>
+        </Ww>
+        <Ww>
+          <count>8</count>
+          <WinNumber>2</WinNumber>
+          <ItemText>UARTTxBuffTail[1]</ItemText>
+        </Ww>
+        <Ww>
+          <count>9</count>
+          <WinNumber>2</WinNumber>
+          <ItemText>UARTTxBuffHead[1]</ItemText>
+        </Ww>
+        <Ww>
+          <count>10</count>
+          <WinNumber>2</WinNumber>
+          <ItemText>UARTRxBuffTail[1]</ItemText>
+        </Ww>
+        <Ww>
+          <count>11</count>
+          <WinNumber>2</WinNumber>
+          <ItemText>UARTRxBuffHead[1]</ItemText>
         </Ww>
       </WatchWindow2>
       <MemoryWindow1>

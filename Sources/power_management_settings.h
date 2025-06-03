@@ -35,9 +35,10 @@ typedef enum PWR_CH
 #define PWR_AUTO_CTRL           {0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1}  // указываем те каналы, которые мы может отключать или включать автоматически
 #define PWR_DOUBLE_OUT          {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}  // указываем те каналы, которые имеют дублированный выход для полукомплектов с холодным резервированием
 
-#define PWR_DEFAULT_STATE       {PWR_CH_OFF, PWR_CH_OFF, PWR_CH_OFF, PWR_CH_ON, PWR_CH_ON, PWR_CH_ON, PWR_CH_ON, PWR_CH_ON, PWR_CH_ON, PWR_CH_ON}  // изначальное состояние каналов
+#define PWR_DEFAULT_STATE       {PWR_CH_ON, PWR_CH_ON, PWR_CH_ON, PWR_CH_ON, PWR_CH_ON, PWR_CH_ON, PWR_CH_ON, PWR_CH_ON, PWR_CH_ON, PWR_CH_ON, PWR_CH_ON, PWR_CH_ON}  // изначальное состояние каналов
 #define PWR_DEFAULT_HALF_SET    {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}   // изначальное состояние каналов
-#define PWR_DEFAULT_DELAY       {0, 0, 0, 200, 200, 200, 200, 200, 200, 200, 200, 2000}  // задержка на включение каждого следующего устройства при включении питания (мс)
+#define PWR_INIT_TIMEOUT_MS     (10000)
+#define PWR_DEFAULT_DELAY       {0, 0, 0, 1000, 1200, 1400, 1600, 1800, 2000, 2200, 2400, 200}  // задержка на включение каждого следующего устройства при включении питания после PWR_MAIN_PWR_DELAY_MS (мс)
 
 // Конфигурация GPIO - это массив из 5ти GPIO: 
 // PWR_CH_CTRL_NU - не используются
