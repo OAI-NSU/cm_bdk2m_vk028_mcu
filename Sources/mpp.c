@@ -113,15 +113,15 @@ int8_t mpp_process_tp(void* ctrl_struct, uint64_t time_us, typeProcessInterfaceS
 int8_t mpp_frame_forming(typeMPPStruct* mpp_ptr)
 {
 	if(mpp_ptr->rec_ptr >= 2){
-		mpp_ptr->frame.row.label = 0x0FF1;
-		mpp_ptr->frame.row.definer = frame_definer(0, mpp_ptr->device_number, NULL, mpp_ptr->frame_type);
-		mpp_ptr->frame.row.num = ((*mpp_ptr->global_frame_num_ptr)++)&0xFFFF;
-		mpp_ptr->frame.row.time = _rev_u32_by_u16(clock_get_time_s());
+		mpp_ptr->frame.raw.label = 0x0FF1;
+		mpp_ptr->frame.raw.definer = frame_definer(0, mpp_ptr->device_number, NULL, mpp_ptr->frame_type);
+		mpp_ptr->frame.raw.num = ((*mpp_ptr->global_frame_num_ptr)++)&0xFFFF;
+		mpp_ptr->frame.raw.time = _rev_u32_by_u16(clock_get_time_s());
 		mpp_ptr->rec_ptr -= 1;
 		mpp_ptr->frame.mpp.rec[0] = mpp_ptr->rec_buff[mpp_ptr->rec_ptr];
 		mpp_ptr->rec_ptr -= 1;
 		mpp_ptr->frame.mpp.rec[1] = mpp_ptr->rec_buff[mpp_ptr->rec_ptr];
-		mpp_ptr->frame.row.crc16 = frame_crc16((uint8_t*)&mpp_ptr->frame.row, sizeof(typeFrameStruct) - 2);
+		mpp_ptr->frame.raw.crc16 = frame_crc16((uint8_t*)&mpp_ptr->frame.raw, sizeof(typeFrameStruct) - 2);
 		//
 		mpp_ptr->frame_data_ready = 1;
 		return 1;
@@ -166,9 +166,10 @@ void mpp_on_off(typeMPPStruct* mpp_ptr, uint32_t on_off)
 void mpp_constant_mode(typeMPPStruct* mpp_ptr, uint32_t on_off)
 {
 	uint16_t data[2];
-	mpp_ptr->const_mode = (on_off) ? 0xAAAA : 0x0000;
-	data[0] = __REV16(mpp_ptr->const_mode); 
-	ib_run_transaction(mpp_ptr->ib, 0xFF, MB_F_CODE_106, 0x5555, 1, data);
+	mpp_ptr->mode = (on_off) ? 0x01 : 0x00;
+	data[0] = __REV16((mpp_ptr->channel << 8) | (255));
+	data[1] = __REV16(mpp_ptr->mode); 
+	ib_run_transaction(mpp_ptr->ib, mpp_ptr->id, 16, 0, 2, data);
 }
 
 /**

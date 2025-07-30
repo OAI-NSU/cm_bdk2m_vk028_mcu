@@ -42,7 +42,7 @@ typedef struct
   * @brief  структура кадар ДИР
   */
 typedef union{
-  typeFrameStruct row;
+  typeFrameStruct raw;
   struct{
     uint16_t header[5];
     //

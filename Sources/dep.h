@@ -3,6 +3,7 @@
 
 #include <string.h>
 #include "main.h"
+#include "math.h"
 #include "internal_bus.h"
 #include "task_planner.h"
 #include "cyclogramma.h"
@@ -10,12 +11,12 @@
 #include "clock.h"
 
 // дефайны для переменных
-#define DEP_DEFAULT_INTERVAL_MS (10000)
+#define DEP_DEFAULT_INTERVAL_MS (1000)
 
 #define DEP_EVENT_MEAS_INTERVAL_START       (1<<0)
 #define DEP_EVENT_MEAS_INTERVAL_DATA_READY  (1<<1)
 
-#define DEP_REC_FIFO_DEPTH 16
+#define DEP_REC_FIFO_DEPTH 8
 
 // структуры данных
 #pragma pack(push, 2)
@@ -47,7 +48,7 @@ typedef struct
   * @brief  структура кадар ДЭП
   */
 typedef union{
-  typeFrameStruct row;
+  typeFrameStruct raw;
   struct{
     uint16_t header[5];
     //
@@ -80,14 +81,18 @@ typedef struct
   typeDEPFrameUnion frame;
   uint8_t frame_data_ready;  // флаг готовности данных в памяти на отправку в другой процесс
   typeDEPProcess ch[2];
+  typeDEPAcqValue last_meas;
+  float last_field[2], last_freq[2];
   // fifo для обработки данных ДЭП
   typeDEPAcqValue rec_fifo[DEP_REC_FIFO_DEPTH];
   uint8_t rec_num, rec_max;
+  uint16_t current_meas_interval;  // данные для хранения измерительного интервала
+  uint16_t rec_num_to_meas_int_change;  // данные для хранения измерительного интервала
+  //
   // general
 	
   // cyclogram_ctrl
   typeCyclograma meas_cyclo;
-  typeCyclograma speedy_cyclo;
 } typeDEPStruct;
 
 #pragma pack(pop)
@@ -103,6 +108,8 @@ void dep_constant_mode(typeDEPStruct* dep_ptr, uint32_t on_off);
 void dep_start(typeDEPStruct *dep_ptr, uint16_t meas_num);
 void dep_stop(typeDEPStruct *dep_ptr);
 void dep_read_data(typeDEPStruct *dep_ptr);
+float __dep_field_calculate(uint16_t raw_data);
+float __dep_freq_calculate(uint8_t raw_data);
 
 int8_t dep_write_fifo(typeDEPStruct *dep_ptr, typeDEPAcqValue* data);
 int8_t dep_read_fifo(typeDEPStruct *dep_ptr, typeDEPAcqValue* data);

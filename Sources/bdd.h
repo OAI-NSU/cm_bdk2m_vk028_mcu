@@ -68,7 +68,7 @@ typedef struct
   * @note  необходимо синхронизовать с ПО БДД
   */
 typedef union{
-  typeFrameStruct row;
+  typeFrameStruct raw;
   struct{
     uint16_t header[5];
     // основные параметры
@@ -99,7 +99,7 @@ typedef union{
   * @note  кадр, сгенерированный ЦМ
   */
 typedef union{
-  typeFrameStruct row;
+  typeFrameStruct raw;
   struct{
     uint16_t header[5];
     // основные параметры
@@ -115,7 +115,7 @@ typedef union{
   * @brief  структура архивного кадра БДД
   */
 typedef union{
-  typeFrameStruct row;
+  typeFrameStruct raw;
   struct{
     uint16_t header[5];
     //

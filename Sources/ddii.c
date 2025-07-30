@@ -109,16 +109,16 @@ int8_t ddii_frame_forming(typeDDIIStruct* ddii_ptr)
 	for (i = DDII_REC_FIFO_DEPTH; i>0; i--){
 		if (ddii_read_fifo(ddii_ptr, &frame)){
 			//
-			ddii_ptr->sys_ddii_frame.row.label = 0x0FF1;
-			ddii_ptr->sys_ddii_frame.row.definer = frame_definer(0, ddii_ptr->device_number, NULL, ddii_ptr->frame_type);
-			ddii_ptr->sys_ddii_frame.row.num = ((*ddii_ptr->global_frame_num_ptr)++)&0xFFFF;
-			ddii_ptr->sys_ddii_frame.row.time = _rev_u32_by_u16(clock_get_time_s());
+			ddii_ptr->sys_ddii_frame.raw.label = 0x0FF1;
+			ddii_ptr->sys_ddii_frame.raw.definer = frame_definer(0, ddii_ptr->device_number, NULL, ddii_ptr->frame_type);
+			ddii_ptr->sys_ddii_frame.raw.num = ((*ddii_ptr->global_frame_num_ptr)++)&0xFFFF;
+			ddii_ptr->sys_ddii_frame.raw.time = _rev_u32_by_u16(clock_get_time_s());
 			//
-			memset((uint8_t*)&ddii_ptr->sys_ddii_frame.row.data[0], 0xFE, sizeof(ddii_ptr->sys_ddii_frame.row.data));
+			memset((uint8_t*)&ddii_ptr->sys_ddii_frame.raw.data[0], 0xFE, sizeof(ddii_ptr->sys_ddii_frame.raw.data));
 			//
 			memcpy((uint8_t*)&ddii_ptr->sys_ddii_frame.sys.body, (uint8_t*)&frame.sys.body, sizeof(typeDDIISysFrameReport));
 			//
-			ddii_ptr->sys_ddii_frame.row.crc16 = frame_crc16((uint8_t*)&ddii_ptr->sys_ddii_frame.row, sizeof(typeFrameStruct) - 2);
+			ddii_ptr->sys_ddii_frame.raw.crc16 = frame_crc16((uint8_t*)&ddii_ptr->sys_ddii_frame.raw, sizeof(typeFrameStruct) - 2);
 			//
 			ddii_ptr->frame_data_ready = 1;
 			retstate = 1;
@@ -171,7 +171,7 @@ void ddii_read_data_frame(typeDDIIStruct *ddii_ptr)
 {
 	mko_bc_set_bus(ddii_ptr->mko_bc_ptr, ddii_ptr->mko_bus);
 	mko_bc_transaction_start(ddii_ptr->mko_bc_ptr, MKO_BC_MODE_READ, ddii_ptr->mko_addr, DDII_MKO_SA_SYS_FRAME, (uint16_t*)&ddii_ptr->sys_raw_frame, 32);
-	if ((ddii_ptr->sys_raw_frame.row.label == 0x0FF1)) {
+	if ((ddii_ptr->sys_raw_frame.raw.label == 0x0FF1)) {
 		// кадр уже сохранен в ddii_ptr->sys_raw_frame
 	}
 	else{

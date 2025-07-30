@@ -63,7 +63,7 @@ void cm_init(
 	//
 	cm_ptr->half_set_num = gpio_get(cm_ptr->hs_io_ptr);
 	cm_set_clear_status(cm_ptr, CM_STATUS_CFG_HALF_SET, cm_ptr->half_set_num & 0x01);
-	stm_single_ch_const_set(cm_ptr->stm_ptr, NKBE, (cm_ptr->half_set_num & 0x01));
+	// stm_single_ch_const_set(cm_ptr->stm_ptr, NKBE, (cm_ptr->half_set_num & 0x01));
 	//
 	cm_ptr->device_number = device_number;
 	cm_ptr->sw_version = get_version_from_str(ver_str);
@@ -192,13 +192,13 @@ void cm_set_cfg(typeCMModel* cm_ptr)
   */
 void cm_get_cfg(typeCMModel* cm_ptr)
 {
-	cm_ptr->current_cfg.row.label = 0x0FF1;
-	cm_ptr->current_cfg.row.definer = frame_definer(0, cm_ptr->device_number, NULL, CM_CFG_FRAME_TYPE);
-	cm_ptr->current_cfg.row.num = 0xFEFE; //не используется для данного типа кадров
-	cm_ptr->current_cfg.row.time = _rev_u32_by_u16(clock_get_time_s());
+	cm_ptr->current_cfg.raw.label = 0x0FF1;
+	cm_ptr->current_cfg.raw.definer = frame_definer(0, cm_ptr->device_number, NULL, CM_CFG_FRAME_TYPE);
+	cm_ptr->current_cfg.raw.num = 0xFEFE; //не используется для данного типа кадров
+	cm_ptr->current_cfg.raw.time = _rev_u32_by_u16(clock_get_time_s());
 	//
 	cm_ptr->current_cfg.cfg.body.power_status = cm_ptr->pwr_ptr->status;
-	cm_ptr->current_cfg.cfg.body.power_state = cm_ptr->pwr_ptr->state & 0xFF;
+	cm_ptr->current_cfg.cfg.body.power_state = cm_ptr->pwr_ptr->state;
 	//
 	cm_ptr->current_cfg.cfg.body.rst_cnter = cm_ptr->ctrl.rst_cnter;
 	cm_ptr->current_cfg.cfg.body.gup = 0xFE;
@@ -210,7 +210,7 @@ void cm_get_cfg(typeCMModel* cm_ptr)
 	//
 	memset((uint8_t*)&cm_ptr->current_cfg.cfg.body.reserve, 0xFE, sizeof(cm_ptr->loaded_cfg.cfg.body.reserve)); 
 	//
-	cm_ptr->current_cfg.row.crc16 = frame_crc16((uint8_t*)&cm_ptr->current_cfg.row, sizeof(typeFrameStruct) - 2);
+	cm_ptr->current_cfg.raw.crc16 = frame_crc16((uint8_t*)&cm_ptr->current_cfg.raw, sizeof(typeFrameStruct) - 2);
 }
 
 /**
@@ -530,12 +530,12 @@ void cm_frame_forming(typeCMModel* cm_ptr)
 {
 	uint8_t i;
 	//
-	cm_ptr->frame.row.label = 0x0FF1;
-	cm_ptr->frame.row.definer = frame_definer(0, cm_ptr->device_number, NULL, cm_ptr->frame_type);
-	cm_ptr->frame.row.num = (cm_ptr->global_frame_num++);
-	cm_ptr->frame.row.time = _rev_u32_by_u16(clock_get_time_s());
+	cm_ptr->frame.raw.label = 0x0FF1;
+	cm_ptr->frame.raw.definer = frame_definer(0, cm_ptr->device_number, NULL, cm_ptr->frame_type);
+	cm_ptr->frame.raw.num = (cm_ptr->global_frame_num++);
+	cm_ptr->frame.raw.time = _rev_u32_by_u16(clock_get_time_s());
 	// заполнение полей ЦМ
-	memset((uint8_t*)cm_ptr->frame.row.data, 0xFEFE, sizeof(cm_ptr->frame.row.data));
+	memset((uint8_t*)cm_ptr->frame.raw.data, 0xFEFE, sizeof(cm_ptr->frame.raw.data));
 	//
 	for (i=0; i<PWR_CH_NUMBER; i++) {
 		cm_ptr->frame.sys.body.currents[i] = cm_ptr->pwr_ptr->ch[i].current_mA;
@@ -563,7 +563,7 @@ void cm_frame_forming(typeCMModel* cm_ptr)
 	cm_ptr->frame.sys.body.read_ptr = cm_ptr->mem.read_ptr;
 	cm_ptr->frame.sys.body.write_ptr = cm_ptr->mem.write_ptr;
 	//
-	cm_ptr->frame.row.crc16 = frame_crc16((uint8_t*)&cm_ptr->frame.row, sizeof(typeFrameStruct) - 2);
+	cm_ptr->frame.raw.crc16 = frame_crc16((uint8_t*)&cm_ptr->frame.raw, sizeof(typeFrameStruct) - 2);
 }
 
 // Отладка через ВШ

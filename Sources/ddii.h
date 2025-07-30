@@ -63,7 +63,7 @@ typedef  struct
  * @brief объединение для свзяки уровней кадров и полезных данных
  */
 typedef union{
-	typeFrameStruct row;
+	typeFrameStruct raw;
 	struct{
 		uint16_t header[5];
 		typeDDIISysFrameReport body;

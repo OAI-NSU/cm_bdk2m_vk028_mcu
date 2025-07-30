@@ -153,7 +153,7 @@ typedef  struct
  * @brief объединение для связки уровней кадров и полезных данных
  */
 typedef union{
-	typeFrameStruct row;
+	typeFrameStruct raw;
 	struct{
 		uint16_t header[5];
 		typeCMFrameReport body;
@@ -182,7 +182,7 @@ typedef  struct
 }typeCfgReport;      //52
 
 typedef union{
-	typeFrameStruct row;
+	typeFrameStruct raw;
 	struct{
 		uint16_t header[5];
 		typeCfgReport body;

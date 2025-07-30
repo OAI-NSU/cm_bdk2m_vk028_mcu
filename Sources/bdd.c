@@ -108,19 +108,19 @@ int8_t bdd_frame_forming(typeBDDStruct* bdd_ptr)
 		typeBDDAcqValue rec_tmp;
 		//
 		if (bdd_ptr->rec_num >= BDD_MEAS_NUMBER){
-			bdd_ptr->frame.row.label = 0x0FF1;
-			bdd_ptr->frame.row.definer = frame_definer(0, bdd_ptr->device_number, NULL, bdd_ptr->frame_type);
-			bdd_ptr->frame.row.num = ((*bdd_ptr->global_frame_num_ptr)++)&0xFFFF;
-			bdd_ptr->frame.row.time = _rev_u32_by_u16(clock_get_time_s());
+			bdd_ptr->frame.raw.label = 0x0FF1;
+			bdd_ptr->frame.raw.definer = frame_definer(0, bdd_ptr->device_number, NULL, bdd_ptr->frame_type);
+			bdd_ptr->frame.raw.num = ((*bdd_ptr->global_frame_num_ptr)++)&0xFFFF;
+			bdd_ptr->frame.raw.time = _rev_u32_by_u16(clock_get_time_s());
 			//
-			memset((uint8_t*)&bdd_ptr->frame.row.data[0], 0xFEFE, sizeof(bdd_ptr->frame.row.data));
+			memset((uint8_t*)&bdd_ptr->frame.raw.data[0], 0xFEFE, sizeof(bdd_ptr->frame.raw.data));
 			//
 			for (i=0; i<BDD_MEAS_NUMBER; i++){
 				bdd_read_fifo(bdd_ptr, &rec_tmp);
 				memcpy((uint8_t*)&bdd_ptr->frame.bdd.meas[i], (uint8_t*)&rec_tmp, sizeof(typeBDDAcqValue));
 			}
 			//
-			bdd_ptr->frame.row.crc16 = frame_crc16((uint8_t*)&bdd_ptr->frame.row, sizeof(typeFrameStruct) - 2);
+			bdd_ptr->frame.raw.crc16 = frame_crc16((uint8_t*)&bdd_ptr->frame.raw, sizeof(typeFrameStruct) - 2);
 			//
 			bdd_ptr->frame_data_ready = 1;
 			return 1;
@@ -243,7 +243,7 @@ void bdd_read_sys_frame(typeBDDStruct *bdd_ptr)
 	typeBDDAcqValue meas;
 	mko_bc_set_bus(bdd_ptr->mko_bc_ptr, bdd_ptr->mko_bus);
 	mko_bc_transaction_start(bdd_ptr->mko_bc_ptr, MKO_BC_MODE_READ, bdd_ptr->mko_addr, BDD_MK_FRAME_SADDR_SYSTEM, (uint16_t*)&bdd_ptr->sys_frame, 32);
-	if ((bdd_ptr->sys_frame.row.label == 0x0FF1) && ((bdd_ptr->sys_frame.row.definer & 0xFC07) == 0x4401)){  //0xFC07 - маска проверки определителя БДД без заводского номера
+	if ((bdd_ptr->sys_frame.raw.label == 0x0FF1) && ((bdd_ptr->sys_frame.raw.definer & 0xFC07) == 0x4401)){  //0xFC07 - маска проверки определителя БДД без заводского номера
 		meas.pressure = bdd_ptr->sys_frame.bdd.pressure;
 		meas.temp = bdd_ptr->sys_frame.bdd.temperature;
 		meas.hv_current = bdd_ptr->sys_frame.bdd.imd_current;

@@ -22,7 +22,7 @@
 //***Общие настройки***//
 
 //версия прошивки
-#define CM_SW_VERSION 			  "0.5"
+#define CM_SW_VERSION 			  "0.6"
 // номер устройства
 #define FRAME_DEV_ID 			    218 // (218 - отработочный)
 // параметры МКО
@@ -158,10 +158,15 @@ void __main_base_init(void)
   printf("%s: gpio init\n", now());
   mko_bc_init(&mko_bc);
   printf("%s: mko_bc init\n", now());
-  mko_rt_init(&mko_rt, MKO_ADDRESS_DEFAULT);
+  stm_init(&stm, &gpio);
+  while (mko_rt_init(&mko_rt, MKO_ADDRESS_DEFAULT)){
+    Timer_Delay(1, 1000);
+    WDRST;
+  }
+  stm_single_ch_const_set(&stm, AMKO, 0);
+  stm_single_ch_const_set(&stm, NKBE, 1);
   ib_init(&ib);
   printf("%s: internal bus init\n", now());
-  stm_init(&stm, &gpio);
   printf("%s: stm init\n", now());
   adc_init(&adc);
   printf("%s: adc init\n", now());
@@ -230,6 +235,7 @@ void cm_mko_command_interface_handler(typeCMModel *cm_ptr)
               fr_mem_set_wr_ptr(&cm.mem, 0);
               cm.ctrl.rst_cnter = 0;
               cm.global_frame_num = 0;
+              pwr_update_default_state(&pwr);
               break;
             case (CMD_SET_INTERVAL):
               cm_set_interval_value(cm_ptr, sa_data[1], sa_data[2]);

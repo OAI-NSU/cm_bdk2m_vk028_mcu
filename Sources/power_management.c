@@ -30,10 +30,6 @@ void pwr_init(typePower* pwr_ptr, typeADCStruct* adc_ptr, type_GPIO_OAI_cm *io_p
 	//
 	uint8_t io_cfg[PWR_CH_NUMBER][5] = PWR_GPIO_PORT_CFG;
 	uint8_t adc_cfg[PWR_CH_NUMBER][1] = PWR_ADC_CFG;
-	// начальное состояние
-	uint8_t def_state[PWR_CH_NUMBER] = PWR_DEFAULT_STATE;
-	uint8_t def_hs[PWR_CH_NUMBER] = PWR_DEFAULT_HALF_SET;
-	uint16_t def_delay[PWR_CH_NUMBER] = PWR_DEFAULT_DELAY;
 	//
 	pwr_ptr->state = 0x0000;
 	pwr_ptr->status = 0x0000;
@@ -66,12 +62,8 @@ void pwr_init(typePower* pwr_ptr, typeADCStruct* adc_ptr, type_GPIO_OAI_cm *io_p
 	for (i=0; i<PWR_CH_NUMBER; i++){
 		pwr_queue_put_cmd(pwr_ptr, 0, i, PWR_CH_OFF, PWR_CH_HS_NOT_CHANGED);
 	}
-	// заполнение параметров для управления каналами при включении
-	for (i=0; i<PWR_CH_NUMBER; i++){
-		pwr_ptr->def_state[i] 	= def_state[i];
-		pwr_ptr->def_hs[i] 		= def_hs[i];
-		pwr_ptr->def_delay[i] 	= def_delay[i];
-	}
+	//
+	pwr_update_default_state(pwr_ptr);
 	//
 	printf("%s: pwr init finish: ch_num <%d>\n", now(), PWR_CH_NUMBER);
 	//
@@ -79,7 +71,32 @@ void pwr_init(typePower* pwr_ptr, typeADCStruct* adc_ptr, type_GPIO_OAI_cm *io_p
 	pwr_ptr->last_call_time_us = 0;
 }
 
-void pwr_set_default(typePower* pwr_ptr){
+/**
+ * @brief  функция обновления состояний для состояний по умолчанию каналов питания 
+ * 
+ * @param pwr_ptr указатель на структуру управления каналами питания
+ */
+void pwr_update_default_state(typePower* pwr_ptr)
+{
+	// начальное состояние
+	uint8_t def_state[PWR_CH_NUMBER] = PWR_DEFAULT_STATE;
+	uint8_t def_hs[PWR_CH_NUMBER] = PWR_DEFAULT_HALF_SET;
+	uint16_t def_delay[PWR_CH_NUMBER] = PWR_DEFAULT_DELAY;
+	//
+	for (uint32_t i=0; i<PWR_CH_NUMBER; i++){
+		pwr_ptr->def_state[i] 	= def_state[i];
+		pwr_ptr->def_hs[i] 		= def_hs[i];
+		pwr_ptr->def_delay[i] 	= def_delay[i];
+	}
+}
+
+/**
+ * @brief  установка состояний по умолчанию для каналов питания из буферов настроек
+ * 
+ * @param pwr_ptr указатель на структуру управления каналами питания
+ */
+void pwr_set_default(typePower* pwr_ptr)
+{
 
 	for (uint32_t i=0; i<PWR_CH_NUMBER; i++){
 		pwr_queue_put_cmd(	pwr_ptr, 
@@ -90,6 +107,12 @@ void pwr_set_default(typePower* pwr_ptr){
 	}
 }
 
+/**
+ * @brief  установка состояния каналов питания в буфер по умолчанию. Используется для подстановки параметров включения каналов из сохраненных параметров
+ * 
+ * @param pwr_ptr указатель на структуру управления каналами питания
+ * @param state состояние каналов питания в виде битовой маски, где 1 - включен, 0 - выключен
+ */
 void pwr_change_default_state(typePower* pwr_ptr, uint32_t state)
 {
 	for (uint32_t i=0; i<PWR_CH_NUMBER; i++){
@@ -122,7 +145,7 @@ int8_t pwr_process_tp(void* ctrl_struct, uint64_t time_us, typeProcessInterfaceS
 			if(pwr_ptr->initialisation_timeout_ms < PWR_INIT_TIMEOUT_MS){
 				pwr_ptr->initialisation_timeout_ms += pwr_ptr->call_interval_us/1000;
 			}
-			else{
+			else if (pwr_ptr->cmd_buffer.cmd_rem == 0){
 				pwr_ptr->initialisation_flag = 0;
 				pwr_set_default(pwr_ptr);
 			}
@@ -142,12 +165,12 @@ int8_t pwr_process_tp(void* ctrl_struct, uint64_t time_us, typeProcessInterfaceS
 void pwr_step_process(typePower* pwr_ptr, uint32_t interval_ms)
 {
 	type_PWR_CMD queue_cmd;
-	volatile uint8_t status;
+	volatile uint8_t status = 0;
 	// обработка состояний каналов
 	for(uint8_t num=0; num<PWR_CH_NUMBER; num++){
 		status = pwr_ch_process(&pwr_ptr->ch[num], interval_ms);
 		if (status == 0){
-			pwr_queue_put_cmd(pwr_ptr, 200, num, 0, PWR_CH_HS_NOT_CHANGED);
+			pwr_queue_put_cmd(pwr_ptr, 0, num, 0, PWR_CH_HS_NOT_CHANGED);
 		}
 		else{
 			//
@@ -187,7 +210,7 @@ void pwr_synchronize_state_and_status(typePower* pwr_ptr)
 	}
 	pwr_ptr->state = state;
 	pwr_ptr->status = status;
-	pwr_ptr->half_set = half_set;
+	pwr_ptr->half_set = half_set; 
 }
 
 /**
@@ -321,7 +344,7 @@ int8_t pwr_buffer_init(typePower* pwr_ptr)
  * @brief запись данных в fifo для принятых данных
  * @param cmd_ptr 
  * @param rx_frame_ptr 
- * @return int8_t 1 - ОК, 0 - записано, но с потерей пакета из-за переполнения
+ * @return int8_t 1 - ОК, 0 - записано, но с потерей пакета из-за переполнения, -1 - ошибка
  */
 int8_t pwr_buffer_write(typePower* pwr_ptr, type_PWR_CMD cmd)
 {
@@ -329,12 +352,24 @@ int8_t pwr_buffer_write(typePower* pwr_ptr, type_PWR_CMD cmd)
 	uint8_t ch_num = cmd.field.num;
 	//
 	if(cmd.field.num < PWR_CH_NUMBER){
-		if(pwr_ptr->cmd_buffer.cmd_array[ch_num].field.process_state != PWR_CMD_STATE_IDLE){
-			ret_val = 0;  // происходит перезапись неисполненной команды
-			pwr_ptr->cmd_buffer.cmd_lost++;
+		if(pwr_ptr->cmd_buffer.cmd_array[ch_num].field.process_state == PWR_CMD_STATE_IDLE){
+			pwr_ptr->cmd_buffer.cmd_cnt++;
+			pwr_ptr->cmd_buffer.cmd_array[ch_num] = cmd;
 		}
-		pwr_ptr->cmd_buffer.cmd_cnt++;
-		pwr_ptr->cmd_buffer.cmd_array[ch_num] = cmd;
+		else if (pwr_ptr->cmd_buffer.cmd_array[ch_num].field.process_state == PWR_CMD_STATE_PROCESS){
+			pwr_ptr->cmd_buffer.cmd_cnt++;
+			pwr_ptr->cmd_buffer.cmd_array[ch_num] = cmd;
+			//
+			pwr_ptr->cmd_buffer.cmd_lost++;
+			ret_val = 0;
+		}
+		else if (pwr_ptr->cmd_buffer.cmd_array[ch_num].field.process_state == PWR_CMD_STATE_READY){
+			pwr_ptr->cmd_buffer.cmd_lost++;
+			ret_val = 0;
+		}
+		else{
+			//
+		}
 	}
 	else{
 		ret_val = -1;

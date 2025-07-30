@@ -19,9 +19,9 @@
 */
 typedef enum
 {
-  PWR_CMD_STATE_IDLE = 0,
-  PWR_CMD_STATE_READY,
-  PWR_CMD_STATE_PROCESS
+  PWR_CMD_STATE_IDLE = 0,   //! простой
+  PWR_CMD_STATE_READY,      //! команда готова к выполнению
+  PWR_CMD_STATE_PROCESS     //! команда принята в обработку и ожидает окончания интервала ожидания
 } type_PWR_CH_CMD_STATE;
 
 #pragma pack(push, 2)
@@ -101,6 +101,8 @@ void pwr_set_state(typePower* pwr_ptr, uint32_t state);
 void pwr_set_bound(typePower* pwr_ptr, uint8_t num, uint16_t bound);
 void pwr_create_report(typePower* pwr_ptr);
 void pwr_change_default_state(typePower* pwr_ptr, uint32_t state);
+void pwr_update_default_state(typePower* pwr_ptr);
+void pwr_set_default(typePower* pwr_ptr);
 //
 uint8_t pwr_queue_get_cmd(typePower* pwr_ptr, type_PWR_CMD *cmd);
 void pwr_queue_put_cmd(typePower* pwr_ptr, uint16_t delay_ms, uint8_t pwr_ch_num, uint8_t state, uint8_t half_set);

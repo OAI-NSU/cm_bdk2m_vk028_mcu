@@ -7,7 +7,7 @@
 
 #define SPI_NULL (void*)0
 
-#define FRAM_USED_CHIP_NUMBER 4
+#define FRAM_USED_CHIP_NUMBER 2
 
 typedef enum MEM_CHIP
 {

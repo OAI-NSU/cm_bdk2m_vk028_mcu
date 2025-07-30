@@ -46,7 +46,7 @@ typedef struct
   * @brief  структура кадар МПП
   */
 typedef union{
-  typeFrameStruct row;
+  typeFrameStruct raw;
   struct{
     uint16_t header[5];
     uint16_t arch_count;

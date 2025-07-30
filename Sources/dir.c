@@ -102,19 +102,19 @@ int8_t dir_frame_forming(typeDIRStruct* dir_ptr)
 		typeDIRMeas rec_tmp;
 		//
 		if (dir_ptr->rec_num >= 2){
-			dir_ptr->frame.row.label = 0x0FF1;
-			dir_ptr->frame.row.definer = frame_definer(0, dir_ptr->device_number, NULL, dir_ptr->frame_type);
-			dir_ptr->frame.row.num = ((*dir_ptr->global_frame_num_ptr)++)&0xFFFF;
-			dir_ptr->frame.row.time = _rev_u32_by_u16(clock_get_time_s());
+			dir_ptr->frame.raw.label = 0x0FF1;
+			dir_ptr->frame.raw.definer = frame_definer(0, dir_ptr->device_number, NULL, dir_ptr->frame_type);
+			dir_ptr->frame.raw.num = ((*dir_ptr->global_frame_num_ptr)++)&0xFFFF;
+			dir_ptr->frame.raw.time = _rev_u32_by_u16(clock_get_time_s());
 			//
-			memset((uint8_t*)&dir_ptr->frame.row.data[0], 0xFE, sizeof(dir_ptr->frame.row.data));
+			memset((uint8_t*)&dir_ptr->frame.raw.data[0], 0xFE, sizeof(dir_ptr->frame.raw.data));
 			//
 			for (i=0; i<2; i++){
 				dir_read_fifo(dir_ptr, &rec_tmp);
 				memcpy((uint8_t*)&dir_ptr->frame.dir.meas[i], (uint8_t*)&rec_tmp, sizeof(typeDIRMeas));
 			}
 			//
-			dir_ptr->frame.row.crc16 = frame_crc16((uint8_t*)&dir_ptr->frame.row, sizeof(typeFrameStruct) - 2);
+			dir_ptr->frame.raw.crc16 = frame_crc16((uint8_t*)&dir_ptr->frame.raw, sizeof(typeFrameStruct) - 2);
 			//
 			dir_ptr->frame_data_ready = 1;
 			return 1;

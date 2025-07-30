@@ -50,6 +50,9 @@ void dep_reset_parameters(typeDEPStruct* dep_ptr)
 	dep_ptr->meas_event_num = 0;
 	dep_ptr->interval_ms = DEP_DEFAULT_INTERVAL_MS;
 	dep_ptr->const_mode = 0x00;
+	//
+	dep_ptr->current_meas_interval = 0;  // данные для хранения измерительного интервала
+  	dep_ptr->rec_num_to_meas_int_change = 0;  // данные для хранения измерительного интервала
 }
 
 /**
@@ -60,12 +63,15 @@ void dep_reset_parameters(typeDEPStruct* dep_ptr)
 int8_t dep_process_tp(void* ctrl_struct, uint64_t time_us, typeProcessInterfaceStruct* interface)
 {
 	uint8_t retval = 0;
-  typeDEPStruct* dep_ptr = (typeDEPStruct*)ctrl_struct;
+	typeDEPStruct* dep_ptr = (typeDEPStruct*)ctrl_struct;
 	/// запуск обработчика по интервалу
 	if ((time_us - dep_ptr->last_call_time_us) > (dep_ptr->interval_ms*1000)) {
 		dep_ptr->last_call_time_us = time_us;
 		// user code begin
-		
+		if(*(uint16_t*)&interface->shared_mem[64] != dep_ptr->current_meas_interval){
+			dep_ptr->rec_num_to_meas_int_change = dep_ptr->rec_num;
+		}
+		dep_ptr->current_meas_interval = *(uint16_t*)&interface->shared_mem[64];
 		// user code end
 		retval = 1;
 	}
@@ -102,20 +108,20 @@ int8_t dep_frame_forming(typeDEPStruct* dep_ptr)
 		typeDEPAcqValue rec_tmp;
 		//
 		if (dep_ptr->rec_num >= 6){
-			dep_ptr->frame.row.label = 0x0FF1;
-			dep_ptr->frame.row.definer = frame_definer(0, dep_ptr->device_number, NULL, dep_ptr->frame_type);
-			dep_ptr->frame.row.num = ((*dep_ptr->global_frame_num_ptr)++)&0xFFFF;
-			dep_ptr->frame.row.time = _rev_u32_by_u16(clock_get_time_s());
+			dep_ptr->frame.raw.label = 0x0FF1;
+			dep_ptr->frame.raw.definer = frame_definer(0, dep_ptr->device_number, NULL, dep_ptr->frame_type);
+			dep_ptr->frame.raw.num = ((*dep_ptr->global_frame_num_ptr)++)&0xFFFF;
+			dep_ptr->frame.raw.time = _rev_u32_by_u16(clock_get_time_s());
 			//
 			for (i=0; i<6; i++){
 				dep_read_fifo(dep_ptr, &rec_tmp);
 				memcpy((uint8_t*)&dep_ptr->frame.dep.meas[i], (uint8_t*)&rec_tmp, sizeof(typeDEPAcqValue));
 			}
 			//
-			dep_ptr->frame.dep.change_int_num = 0xFEFE;
-			dep_ptr->frame.dep.changed_meas_interv = 0xFEFE;
+			dep_ptr->frame.dep.change_int_num = dep_ptr->rec_num_to_meas_int_change;
+			dep_ptr->frame.dep.changed_meas_interv = dep_ptr->current_meas_interval;
 			//
-			dep_ptr->frame.row.crc16 = frame_crc16((uint8_t*)&dep_ptr->frame.row, sizeof(typeFrameStruct) - 2);
+			dep_ptr->frame.raw.crc16 = frame_crc16((uint8_t*)&dep_ptr->frame.raw, sizeof(typeFrameStruct) - 2);
 			//
 			dep_ptr->frame_data_ready = 1;
 			return 1;
@@ -133,9 +139,10 @@ int8_t dep_frame_forming(typeDEPStruct* dep_ptr)
 void dep_constant_mode(typeDEPStruct* dep_ptr, uint32_t on_off)
 {
 	uint16_t data[2];
-	dep_ptr->const_mode = (on_off) ? 0xAAAA : 0x0000;
-	data[0] = __REV16(dep_ptr->const_mode); 
-	ib_run_transaction(dep_ptr->ib, 0xFF, MB_F_CODE_106, 0x5555, 1, data);
+	dep_ptr->const_mode = (on_off) ? 0x01 : 0x00;
+	data[0] = __REV16((2 << 8) | (255));
+	data[1] = __REV16(dep_ptr->const_mode); 
+	ib_run_transaction(dep_ptr->ib, dep_ptr->id, 16, 0, 2, data);
 }
 
 /**
@@ -147,13 +154,8 @@ void dep_constant_mode(typeDEPStruct* dep_ptr, uint32_t on_off)
 void dep_start(typeDEPStruct *dep_ptr, uint16_t meas_num) 
 {
 	uint16_t data[6];
-	data[0] = __REV16(meas_num);
-	//data[1] = __REV16(0x0000);
-	//data[2] = __REV16(0x0000);
-	//data[3] = __REV16(0x0000);
-	//data[4] = __REV16(0x0000);
-	//data[5] = __REV16(0x0000);
-	ib_run_transaction(dep_ptr->ib, dep_ptr->id, MB_F_CODE_16, 0, 1, data);
+	data[0] = __REV16(1);
+	ib_run_transaction(dep_ptr->ib, dep_ptr->id, MB_F_CODE_6, 0x1000, 1, data);
 }
 
 /**
@@ -164,7 +166,7 @@ void dep_stop(typeDEPStruct *dep_ptr)
 {
 	uint16_t data[2];
 	data[0] = __REV16(0x0000);
-	ib_run_transaction(dep_ptr->ib, dep_ptr->id, MB_F_CODE_16, 0, 1, data);
+	ib_run_transaction(dep_ptr->ib, dep_ptr->id, MB_F_CODE_16, 0x1000, 1, data);
 }
 
 /**
@@ -177,13 +179,17 @@ void dep_read_data(typeDEPStruct *dep_ptr)
 	uint8_t i=0;
 	uint16_t received_dep_measurments;
 	//
-	if (ib_run_transaction(dep_ptr->ib, dep_ptr->id, MB_F_CODE_3, 1000, 2+4*3, NULL) > 0) { // запрашиваем 3 измерения, что бы почистить буфер
-		ib_get_answer_data(dep_ptr->ib, in_data, 2*(2+4*3));
-		received_dep_measurments = __REV16(*(uint16_t*)&in_data[2]);
+	if (ib_run_transaction(dep_ptr->ib, dep_ptr->id, MB_F_CODE_3, 0x2000, 1+4*3, NULL) > 0) { // запрашиваем 3 измерения, что бы почистить буфер
+		ib_get_answer_data(dep_ptr->ib, in_data, 2*(1+4*3));
+		received_dep_measurments = __REV16(*(uint16_t*)&in_data[0]);
 		//
 		if (received_dep_measurments != 0) {
-			if (dep_write_fifo(dep_ptr, (typeDEPAcqValue*)&in_data[4+i*sizeof(typeDEPAcqValue)]) > 0) {
-				
+			dep_ptr->last_meas = *(typeDEPAcqValue*)&in_data[2+i*sizeof(typeDEPAcqValue)];
+			if (dep_write_fifo(dep_ptr, &dep_ptr->last_meas) > 0) {
+				dep_ptr->last_field[0] = __dep_field_calculate(dep_ptr->last_meas.Evalue_dep1);
+				dep_ptr->last_field[1] = __dep_field_calculate(dep_ptr->last_meas.Evalue_dep2);
+				dep_ptr->last_freq[0] = __dep_freq_calculate(dep_ptr->last_meas.Dvalue_dep1);
+				dep_ptr->last_freq[1] = __dep_freq_calculate(dep_ptr->last_meas.Dvalue_dep2);
 			}
 			else{
 				//обработка ошибки перезаполениня буфера
@@ -193,6 +199,48 @@ void dep_read_data(typeDEPStruct *dep_ptr)
 	else {
 		//todo: возможно необходимо сделать обработку непринятия пакета с данными
 	}
+}
+
+/**
+ * @brief подсчет и обновления значение поля, измеренного ДЭП
+ * 
+ * @param dep_ptr 
+ * @param raw_data 
+ * @return float 
+ */
+float __dep_field_calculate(uint16_t raw_data)
+{
+	float field;
+	int16_t mantissa, degree;
+	uint16_t scale, sign;
+	uint16_t data = raw_data;
+
+	scale = (data >> 15) & 0x01;
+	mantissa = (data & 0x3FF);
+	mantissa = ((mantissa & 0x200) == 0) ? (-mantissa) : (((~mantissa) + 1) & 0x3FF);
+	degree = (data >> 10) & 0x1F;
+	sign = ((data >> 9) & 0x01);
+	field = (mantissa * (1 << (23 - degree)) * (pow(10, -scale)) / (1 << 18)) * 0.1;
+
+	return field * ((sign == 1) ? (-1) : (1));
+}
+
+/**
+ * @brief подсчет и обновления значение частоты, измеренного ДЭП
+ * 
+ * @param dep_ptr 
+ * @param raw_data 
+ * @return float 
+ */
+float __dep_freq_calculate(uint8_t raw_data)
+{
+	float freq;
+	int8_t data = raw_data;
+	if (raw_data > 127){
+		data = raw_data - 256;
+	}
+	freq = 5e6 / (33333. + (data * (1<<7)));
+	return freq;
 }
 
 /**
