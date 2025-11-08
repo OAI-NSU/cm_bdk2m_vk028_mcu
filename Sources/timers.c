@@ -130,7 +130,7 @@ uint8_t Timers_Status(uint8_t num)
 void Timer_Delay(uint8_t num, uint32_t delay_ms)
 {
     Timers_Start(num, delay_ms); 
-    while (Timers_Status(num) & 1);
+    while (Timers_Status(num) & 1); // проблема: вероятно работало, из-за того, что нигде не ожидалась задержка,а сразу выпадали из Delay()
 }
 
 void TMR0_IRQHandler(void) 

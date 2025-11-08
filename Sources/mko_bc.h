@@ -132,15 +132,15 @@ typedef union {
 
 typedef struct
 {
-	typeMKOBC_DescWord0 Word0;
-	typeMKOBC_DescWord1 Word1;
-	uint32_t BuffAddr;
-	typeMKOBC_DescResult Result;
-	typeMKOBC_DescBranchCond BranchCond;
-	uint32_t BranchAddr;
-	uint32_t res1;
-	uint32_t res2;
-} typeMKOBC_DescList;
+	typeMKOBC_DescWord0 Word0;  			// +0
+	typeMKOBC_DescWord1 Word1;  			// +4
+	uint32_t BuffAddr;						// +8
+	typeMKOBC_DescResult Result;			// +12
+	typeMKOBC_DescBranchCond BranchCond;	// +16
+	uint32_t BranchAddr;					// +20
+	uint32_t res1;							// +24
+	uint32_t res2;							// +28
+} typeMKOBC_DescList;						// 32
 
 typedef union
 {
@@ -173,6 +173,7 @@ typedef union
 	} field;
 }typeAnswerWord;
 
+#pragma pack(pop)
 typedef struct
 {
 	MILSTD_TypeDef_Simple *inst;
@@ -194,7 +195,7 @@ typedef struct
 	int need_to_process_flag;
 }typeMKOBCStruct;
 
-#pragma pack(pop)
+
 
 void mko_bc_init(typeMKOBCStruct *mko_ptr);
 void mko_bc_set_bus(typeMKOBCStruct *mko_ptr, uint8_t bus);

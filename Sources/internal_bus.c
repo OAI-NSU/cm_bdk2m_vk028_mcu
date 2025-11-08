@@ -68,8 +68,8 @@ void ib_reset_parameters(typeIBStruct* ib_ptr)
 	//
 	ib_ptr->command_frame_flag = 0;
 	//
-	memset(ib_ptr->tx_data, 0x00, 256);
-	memset(ib_ptr->rx_data, 0x00, 256);
+	memset(ib_ptr->tx_data, 0x00, sizeof(ib_ptr->tx_data));
+	memset(ib_ptr->rx_data, 0x00, sizeof(ib_ptr->tx_data));
 	ib_ptr->tx_len = 0;
 	ib_ptr->rx_len = 0;
 	//

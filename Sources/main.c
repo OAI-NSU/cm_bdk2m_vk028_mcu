@@ -22,7 +22,7 @@
 //***Общие настройки***//
 
 //версия прошивки
-#define CM_SW_VERSION 			  "0.6"
+#define CM_SW_VERSION 			  "0.8"
 // номер устройства
 #define FRAME_DEV_ID 			    218 // (218 - отработочный)
 // параметры МКО
@@ -159,7 +159,7 @@ void __main_base_init(void)
   mko_bc_init(&mko_bc);
   printf("%s: mko_bc init\n", now());
   stm_init(&stm, &gpio);
-  while (mko_rt_init(&mko_rt, MKO_ADDRESS_DEFAULT)){
+  while (mko_rt_init(&mko_rt, MKO_ADDRESS_DEFAULT) == 0){
     Timer_Delay(1, 1000);
     WDRST;
   }

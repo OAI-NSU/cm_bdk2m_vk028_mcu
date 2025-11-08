@@ -10,7 +10,7 @@
  */
 #include "mko_bc.h"
 
-volatile typeMKOBC_DescList MKOBC_DescListRx __attribute__((aligned (16)));
+volatile typeMKOBC_DescList MKOBC_DescListRx __attribute__((aligned (16)));  //байтовое выравнивание (16 байт)
 volatile typeMKOBC_DescList MKOBC_DescListTx __attribute__((aligned (16)));
 
 uint16_t MKOIVect;

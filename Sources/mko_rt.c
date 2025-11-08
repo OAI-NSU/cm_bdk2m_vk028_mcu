@@ -31,7 +31,7 @@ int8_t mko_rt_init(typeMKORTStruct *mko_rt_ptr, uint8_t mko_addr)
   mko_rt_ptr->error = 0x00;
   mko_rt_ptr->error_cnt = 0x00;
   mko_rt_ptr->sa_rx = 0;
-  memset((uint8_t*)mko_rt_ptr->sa_rx_data, 0x00, sizeof(64));
+  memset((uint8_t*)mko_rt_ptr->sa_rx_data, 0x00, sizeof(mko_rt_ptr->sa_rx_data));
   mko_rt_ptr->rx_cnt = 0;
   mko_rt_ptr->tx_cnt = 0;
   mko_rt_ptr->cmd_cnt = 0;
