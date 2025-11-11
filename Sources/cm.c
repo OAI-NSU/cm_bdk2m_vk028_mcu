@@ -502,6 +502,9 @@ void cm_set_interval_value(typeCMModel* cm_ptr, uint16_t interval_number, uint16
 		case(CM_INTERVAL_DBG):
 			cm_ptr->ctrl.intervals_us[CM_INTERVAL_DBG] = 1000000 * get_val_from_bound(interval_value_s, 10, 7200);
 			break;
+		case(CM_INTERV_DDII):
+			cm_ptr->ctrl.intervals_us[CM_INTERV_DDII] = 1000000 * get_val_from_bound(interval_value_s, 10, 7200);
+			break;
 		case(CM_1S_INTERVAL):
 			//
 			break;
