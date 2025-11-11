@@ -26,10 +26,10 @@ typedef enum PWR_CH
   * @brief  распределение каналов в соответствии с enum PWR_CH
   * @note   длина совпадает с PWR_CH_NUMBER
   */
-#define PWR_CAL_RES_SHUNT_OHM   {0.25f,    0.5f,      0.5f,    4.7f,    4.7f,    4.7f,    4.7f,    4.7f,     4.7f,    4.7f,    4.7f,   0.25f}
-#define PWR_CAL_FB_SHUNT_OHM    {5.11E3f,  5.0E4f,    5.0E4f,  1.0E4f,  1.0E4f,  1.0E4f,  1.0E4f,  1.0E4f,   1.0E4f,  1.0E4f,  1.0E4f, 5.11E3f}
+#define PWR_CAL_RES_SHUNT_OHM   {0.25f,   1.1f,   1.1f,   4.7f,   4.7f,   4.7f,   4.7f,   4.7f,   4.7f,   4.7f,   1.0f,   0.25f}
+#define PWR_CAL_FB_SHUNT_OHM    {5.11E3f, 5.1E3f, 5.1E3f, 1.0E4f, 1.0E4f, 1.0E4f, 1.0E4f, 1.0E4f, 1.0E4f, 1.0E4f, 6.8E3f, 5.11E3f}
 
-#define PWR_CURRENT_BOUND       {3*650, 3*60, 3*60, 3*60, 3*60, 3*60, 3*60, 3*60, 3*60, 3*60, 3*60, 3*60} // граница тока в мА для каждого канала //TODO: уточнить границы тока для каждого канала
+#define PWR_CURRENT_BOUND       {3*650, 3*60, 3*60, 3*60, 3*60, 3*60, 3*60, 3*60, 3*60, 3*60, 3*60, 3*290} // граница тока в мА для каждого канала //TODO: уточнить границы тока для каждого канала
 
 #define PWR_CHANNELS_TYPES      {PWR_CH_CTRL_NU, PWR_CH_CTRL_NU, PWR_CH_CTRL_NU, PWR_CH_FLAG, PWR_CH_FLAG, PWR_CH_FLAG, PWR_CH_FLAG, PWR_CH_FLAG, PWR_CH_FLAG, PWR_CH_FLAG, PWR_CH_FLAG, PWR_CH_PULSE} // типы каналов по способу включения/отключения: NU, FLAG, PULSE, DV_CTRL
 #define PWR_AUTO_CTRL           {0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1}  // указываем те каналы, которые мы может отключать или включать автоматически

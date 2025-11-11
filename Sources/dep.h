@@ -81,6 +81,7 @@ typedef struct
   typeDEPFrameUnion frame;
   uint8_t frame_data_ready;  // флаг готовности данных в памяти на отправку в другой процесс
   typeDEPProcess ch[2];
+  typeDEPAcqValue raw_last_meas;
   typeDEPAcqValue last_meas;
   float last_field[2], last_freq[2];
   // fifo для обработки данных ДЭП
@@ -114,8 +115,8 @@ float __dep_freq_calculate(uint8_t raw_data);
 int8_t dep_write_fifo(typeDEPStruct *dep_ptr, typeDEPAcqValue* data);
 int8_t dep_read_fifo(typeDEPStruct *dep_ptr, typeDEPAcqValue* data);
 
-void _dep_rec_rev(typeDEPAcqValue* dep_rec);
-void dep_set_ena_parameters(typeDEPStruct *dep_ptr, uint8_t dep_ena_ctrl, int8_t top_temp, int8_t bot_temp);
+typeDEPAcqValue _dep_rec_rev_to_mko(typeDEPAcqValue* dep_rec);
+typeDEPAcqValue _dep_rec_convert_to_little_endian(typeDEPAcqValue* dep_rec);
 // функции для работы циклограмы измерительного интервала
 void dep_meas_cycl_init(typeDEPStruct* dep_ptr);
 int32_t dep_meas_cycl_struct_start(void* ctrl_struct, uint8_t* data);

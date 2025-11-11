@@ -40,7 +40,7 @@ enum cm_interval_list
 	CM_INTERV_NUMBER
 };
 #define DEFAULT_CM_INTERV_VALUES_S					{3600, 600, 2, 30, 120, 720, 1}
-#define DEFAULT_CM_DEFAULT_START_TIME_S				{5, 5, 0, 6, 5, 60, 6}
+#define DEFAULT_CM_DEFAULT_START_TIME_S				{14, 14, 14, 15, 14, 60, 15}
 
 #define CM_EVENT_MEAS_INTERVAL_START       			(1<<0)
 #define CM_EVENT_MEAS_INTERVAL_DATA_READY  			(1<<1)

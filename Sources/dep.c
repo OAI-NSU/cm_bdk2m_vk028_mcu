@@ -21,7 +21,7 @@
   */
 void dep_init(typeDEPStruct* dep_ptr, uint8_t self_num, uint8_t id, uint16_t device_number, uint16_t frame_type, typeIBStruct* ib_ptr, uint32_t* gl_fr_num)
 {
-  dep_reset_parameters(dep_ptr);
+	dep_reset_parameters(dep_ptr);
 	dep_ptr->id = id;
 	dep_ptr->device_number = device_number;
 	dep_ptr->frame_type = frame_type;
@@ -115,6 +115,9 @@ int8_t dep_frame_forming(typeDEPStruct* dep_ptr)
 			//
 			for (i=0; i<6; i++){
 				dep_read_fifo(dep_ptr, &rec_tmp);
+				// костыльный способ преобразовать порядок байт к виду, который будет соответствовать ПЛВ через МКО
+				rec_tmp = _dep_rec_convert_to_little_endian( &rec_tmp);
+				rec_tmp = _dep_rec_rev_to_mko( &rec_tmp);
 				memcpy((uint8_t*)&dep_ptr->frame.dep.meas[i], (uint8_t*)&rec_tmp, sizeof(typeDEPAcqValue));
 			}
 			//
@@ -154,7 +157,7 @@ void dep_constant_mode(typeDEPStruct* dep_ptr, uint32_t on_off)
 void dep_start(typeDEPStruct *dep_ptr, uint16_t meas_num) 
 {
 	uint16_t data[6];
-	data[0] = __REV16(1);
+	data[0] = (meas_num);
 	ib_run_transaction(dep_ptr->ib, dep_ptr->id, MB_F_CODE_6, 0x1000, 1, data);
 }
 
@@ -165,7 +168,7 @@ void dep_start(typeDEPStruct *dep_ptr, uint16_t meas_num)
 void dep_stop(typeDEPStruct *dep_ptr)
 {
 	uint16_t data[2];
-	data[0] = __REV16(0x0000);
+	data[0] = (0x0000);
 	ib_run_transaction(dep_ptr->ib, dep_ptr->id, MB_F_CODE_16, 0x1000, 1, data);
 }
 
@@ -178,26 +181,30 @@ void dep_read_data(typeDEPStruct *dep_ptr)
 	uint8_t in_data[64] = {0};
 	uint8_t i=0;
 	uint16_t received_dep_measurments;
+	typeDEPAcqValue tmp_rec;
 	//
+	memset(in_data, 0xFE, sizeof(in_data));
 	if (ib_run_transaction(dep_ptr->ib, dep_ptr->id, MB_F_CODE_3, 0x2000, 1+4*3, NULL) > 0) { // запрашиваем 3 измерения, что бы почистить буфер
-		ib_get_answer_data(dep_ptr->ib, in_data, 2*(1+4*3));
-		received_dep_measurments = __REV16(*(uint16_t*)&in_data[0]);
-		//
-		if (received_dep_measurments != 0) {
-			dep_ptr->last_meas = *(typeDEPAcqValue*)&in_data[2+i*sizeof(typeDEPAcqValue)];
-			if (dep_write_fifo(dep_ptr, &dep_ptr->last_meas) > 0) {
-				dep_ptr->last_field[0] = __dep_field_calculate(dep_ptr->last_meas.Evalue_dep1);
-				dep_ptr->last_field[1] = __dep_field_calculate(dep_ptr->last_meas.Evalue_dep2);
-				dep_ptr->last_freq[0] = __dep_freq_calculate(dep_ptr->last_meas.Dvalue_dep1);
-				dep_ptr->last_freq[1] = __dep_freq_calculate(dep_ptr->last_meas.Dvalue_dep2);
-			}
-			else{
-				//обработка ошибки перезаполениня буфера
-			}
-		}
+		ib_get_answer_data(dep_ptr->ib, in_data, 2*(1+4*3));  // буфер заполняется
 	}
 	else {
-		//todo: возможно необходимо сделать обработку непринятия пакета с данными
+	}
+	received_dep_measurments = ((__REV16(*(uint16_t*)&in_data[0]) != 0) && (__REV16(*(uint16_t*)&in_data[0]) != 0xFE)) ? 1 : 0;
+	tmp_rec = *(typeDEPAcqValue*)&in_data[2+i*sizeof(typeDEPAcqValue)];
+	//
+	if ((received_dep_measurments != 0) && (received_dep_measurments != 0xFE)) {
+		dep_ptr->last_meas = _dep_rec_convert_to_little_endian(&tmp_rec);
+		dep_ptr->raw_last_meas = tmp_rec;
+
+		if (dep_write_fifo(dep_ptr, &dep_ptr->last_meas) > 0) {
+			dep_ptr->last_field[0] = __dep_field_calculate(__REV16(dep_ptr->last_meas.Evalue_dep1));
+			dep_ptr->last_field[1] = __dep_field_calculate(__REV16(dep_ptr->last_meas.Evalue_dep2));
+			dep_ptr->last_freq[0] = __dep_freq_calculate(dep_ptr->last_meas.Dvalue_dep1);
+			dep_ptr->last_freq[1] = __dep_freq_calculate(dep_ptr->last_meas.Dvalue_dep2);
+		}
+		else{
+			//обработка ошибки перезаполениня буфера
+		}
 	}
 }
 
@@ -283,21 +290,44 @@ int8_t dep_read_fifo(typeDEPStruct* dep_ptr, typeDEPAcqValue* data)
 }
 
 /**
- * @brief переварачивание байт внутр 16-ти битных переменных
+ * @brief переворачивание байт внутр 16-ти битных переменных для выкладывание на МКО переменную
  * 
  * 
  * @param dep_rec структура, принимаемая из модуля ДЭП по ВШ
  */
-void _dep_rec_rev(typeDEPAcqValue* dep_rec)
+typeDEPAcqValue _dep_rec_rev_to_mko(typeDEPAcqValue* dep_rec)
 {  
     uint16_t data[32];
     uint8_t i = 0;
+	typeDEPAcqValue tmp_rec;
+
     memcpy((uint8_t *)data, (uint8_t *)dep_rec, sizeof(typeDEPAcqValue));
     for (i=0; i<(sizeof(typeDEPAcqValue)/2); i++) {
         data[i] = __REV16(data[i]);
     }
-    memcpy((uint8_t *)dep_rec, (uint8_t *)data, sizeof(typeDEPAcqValue));
+    memcpy((uint8_t *)&tmp_rec, (uint8_t *)data, sizeof(typeDEPAcqValue));
+	return tmp_rec;
 }
+
+/**
+ * @brief приведение структуры с данными к эндианности, используемой в МК
+ * 
+ * @param dep_rec 
+ * @return typeDEPAcqValue получившаяся структура с данными
+ */
+typeDEPAcqValue _dep_rec_convert_to_little_endian(typeDEPAcqValue* dep_rec)
+{  
+	typeDEPAcqValue tmp_rec;
+
+	tmp_rec = *dep_rec;
+	
+    tmp_rec.Evalue_dep1 = __REV16(dep_rec->Evalue_dep1);
+    tmp_rec.Evalue_dep2 = __REV16(dep_rec->Evalue_dep2);
+
+    return tmp_rec;
+}
+
+
 
 /**
   * @brief  инициализация циклограмм работы с ДЭП
@@ -309,6 +339,7 @@ void dep_meas_cycl_init(typeDEPStruct* dep_ptr)
 	// циклограмма инициализации МПП
 	cyclo_init(&dep_ptr->meas_cyclo, "dep");
 	//
+	*(uint16_t*)(&data[0]) = 2;
 	cyclo_add_step(&dep_ptr->meas_cyclo, dep_meas_cycl_struct_start, (void*)dep_ptr, 0, 1500, data);
 	cyclo_add_step(&dep_ptr->meas_cyclo, dep_meas_cycl_read_data, (void*)dep_ptr, 0, 0, data);
 	cyclo_add_step(&dep_ptr->meas_cyclo, dep_meas_cycl_frame_forming, (void*)dep_ptr, 0, 0, data);
@@ -321,7 +352,9 @@ void dep_meas_cycl_init(typeDEPStruct* dep_ptr)
 int32_t dep_meas_cycl_struct_start(void* ctrl_struct, uint8_t* data)
 {
 	typeDEPStruct* dep_ptr = (typeDEPStruct*) ctrl_struct;
-	dep_start(dep_ptr, 3);
+	uint16_t meas_time_s = 0;
+	meas_time_s = *(uint16_t*)&data[0];
+	dep_start(dep_ptr, meas_time_s);
 	return 0;
 }
 
