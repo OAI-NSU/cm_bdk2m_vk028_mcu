@@ -309,8 +309,8 @@ void mko_rt_rx_fifo_rec_num_update(typeMKORTStruct* mko_rt_ptr)
 uint8_t mko_rt_get_addr_from_gpio(typeMKORTStruct *mko_rt_ptr)
 {
   /*get mko address*/
-  uint8_t mko_psum = 0; 
-  uint8_t mko_addr = 0; 
+  volatile uint8_t mko_psum = 0; 
+  volatile uint8_t mko_addr = 0; 
   //
 	RCU->HRSTCFG |= RCU_HRSTCFG_GPIOJEN_Msk;  RCU->HCLKCFG |= RCU_HCLKCFG_GPIOJEN_Msk;
   GPIOJ->DENSET = 0x3F;
@@ -321,7 +321,7 @@ uint8_t mko_rt_get_addr_from_gpio(typeMKORTStruct *mko_rt_ptr)
     mko_psum = mko_psum ^ ((mko_addr >> i) & 1);
   }
   mko_addr = (mko_addr >> 1) & 0x1F;
-  if((mko_addr == 0x1F)||(mko_addr == 0)||(mko_psum != 0)){
+  if((mko_addr == 0x1F)||(mko_addr == 0)||(mko_psum == 0)){
     return 0;
   }
   return mko_addr;

@@ -22,11 +22,11 @@
 //***Общие настройки***//
 
 //версия прошивки
-#define CM_SW_VERSION 			  "0.9"
+#define CM_SW_VERSION 			  "0.10"
 // номер устройства
 #define FRAME_DEV_ID 			    218 // (218 - отработочный)
 // параметры МКО
-#define MKO_ADDRESS_DEFAULT 	29 // 0 - адрес берется с разъема, не 0 - адрес МКО (29 - по умолчанию)
+#define MKO_ADDRESS_DEFAULT 	0 // 0 - адрес берется с разъема, не 0 - адрес МКО (29 - по умолчанию)
 
 //
 extern uint32_t SystemCoreClock;  /*100_000_000*/
