@@ -27,7 +27,7 @@ typedef enum PWR_CH
   * @note   длина совпадает с PWR_CH_NUMBER
   */
 #define PWR_CAL_RES_SHUNT_OHM   {0.25f,    1.0f,    1.0f,     2.0f,     2.0f,    2.0f,     2.0f,     2.0f,     2.0f,      2.0f,     1.0f,    0.25f}
-#define PWR_CAL_FB_SHUNT_OHM    {5.11E3f, 10E3f, 10E3f, 5.6E4f, 5.6E4f, 5.6E4f, 5.6E4f, 5.6E4f, 5.6E4f, 5.6E4f, 5.9E3f, 5.11E3f}
+#define PWR_CAL_FB_SHUNT_OHM    {5.11E3f, 10E3f, 10E3f, 5.6E3f, 5.6E3f, 5.6E3f, 5.6E3f, 5.6E3f, 5.6E3f, 5.6E3f, 5.9E3f, 5.11E3f}
 
 #define PWR_CURRENT_BOUND       {3*650, 3*60, 3*60, 3*60, 3*60, 3*60, 3*60, 3*60, 3*60, 3*60, 3*60, 3*290} // граница тока в мА для каждого канала //TODO: уточнить границы тока для каждого канала
 
