@@ -92,6 +92,19 @@ int8_t dir_process_tp(void* ctrl_struct, uint64_t time_us, typeProcessInterfaceS
 }
 
 /**
+  * @brief  запуск ДЭП командой регистра RUN (4096)
+	* @param  dep_ptr указатель на структуру управления
+	* @param  time_us время МК us
+	* @param  meas_num W - нужное число измерений, R - оставшееся число измерений (+0)
+  */
+void dir_start(typeDIRStruct *dir_ptr) 
+{
+	uint16_t data[6];
+	data[0] = 1;
+	ib_run_transaction(dir_ptr->ib, dir_ptr->id, MB_F_CODE_6, 0x4000, 1, data);
+}
+
+/**
   * @brief  формирование кадра ДИР c выставлением флага
 	* @param  dir_ptr указатель на структуру управления
 	* @retval  статус: 0 - кадр не сформирован, 1 - кадр сформирован
@@ -146,14 +159,14 @@ void dir_read_data(typeDIRStruct *dir_ptr)
 {
 	uint8_t in_data[32] = {0};
 	//
-	if (ib_run_transaction(dir_ptr->ib, dir_ptr->id, MB_F_CODE_3, 2000, 10, NULL) > 0) {
+	if (ib_run_transaction(dir_ptr->ib, dir_ptr->id, MB_F_CODE_3, 0x4001, 10, NULL) > 0) {
 		ib_get_answer_data(dir_ptr->ib, in_data, 2*(10));
 		//
 		if (dir_write_fifo(dir_ptr, (typeDIRMeas*)&in_data[0]) > 0) {
 			
 		}
 		else{
-			//обработка ошибки перезаполениня буфера
+			//обработка ошибки переполнения буфера
 		}
 	}
 	else {
@@ -229,8 +242,22 @@ void dir_meas_cycl_init(typeDIRStruct* dir_ptr)
 	// циклограмма инициализации ДИР
 	cyclo_init(&dir_ptr->meas_cyclo, "dir");
 	//
+	cyclo_add_step(&dir_ptr->meas_cyclo, dir_meas_cycl_struct_start, (void*)dir_ptr, 0, 1500, data);
 	cyclo_add_step(&dir_ptr->meas_cyclo, dir_meas_cycl_read_data, (void*)dir_ptr, 0, 100, data);
 	cyclo_add_step(&dir_ptr->meas_cyclo, dir_meas_cycl_frame_forming, (void*)dir_ptr, 0, 0, data);
+}
+
+/**
+  * @brief  обертка функция для согласования типов
+	* @param  ctrl_struct указатель на структуру управления
+  */
+int32_t dir_meas_cycl_struct_start(void* ctrl_struct, uint8_t* data)
+{
+	typeDIRStruct* dir_ptr = (typeDIRStruct*) ctrl_struct;
+	uint16_t meas_time_s = 0;
+	meas_time_s = *(uint16_t*)&data[0];
+	dir_start(dir_ptr);
+	return 0;
 }
 
 /**
