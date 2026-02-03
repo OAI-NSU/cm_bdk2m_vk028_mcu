@@ -254,8 +254,6 @@ void dir_meas_cycl_init(typeDIRStruct* dir_ptr)
 int32_t dir_meas_cycl_struct_start(void* ctrl_struct, uint8_t* data)
 {
 	typeDIRStruct* dir_ptr = (typeDIRStruct*) ctrl_struct;
-	uint16_t meas_time_s = 0;
-	meas_time_s = *(uint16_t*)&data[0];
 	dir_start(dir_ptr);
 	return 0;
 }
