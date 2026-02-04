@@ -145,10 +145,10 @@ int8_t dir_frame_forming(typeDIRStruct* dir_ptr)
 void dir_constant_mode(typeDIRStruct* dir_ptr, uint32_t on_off)
 {
 	uint16_t data[2];
-	dir_ptr->const_mode = (on_off) ? 0x55AA : 0x5500;
-	data[0] = __REV16(0x00);
+	dir_ptr->const_mode = (on_off) ? 0x01 : 0x00;
+	data[0] = __REV16((2 << 8) | (255));
 	data[1] = __REV16(dir_ptr->const_mode); 
-	ib_run_transaction(dir_ptr->ib, 0xFF, 106, 0, 2, data);
+	ib_run_transaction(dir_ptr->ib, dir_ptr->id, 16, 0, 2, data);
 }
 
 /**
