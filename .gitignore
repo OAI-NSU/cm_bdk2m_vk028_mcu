@@ -4,7 +4,7 @@ doxygen/html/
 doxygen/latex/
 *.uvguix.User
 *.uvoptx
-
+/settings.json
 # Prerequisites
 *.d
 
