@@ -2,6 +2,8 @@
 /Objs/*
 doxygen/html/
 doxygen/latex/
+*.uvguix.User
+*.uvoptx
 
 # Prerequisites
 *.d
@@ -11,7 +13,6 @@ doxygen/latex/
 *.ko
 *.obj
 *.elf
-
 # Linker output
 *.ilk
 *.map
