@@ -92,14 +92,12 @@ int8_t dir_process_tp(void* ctrl_struct, uint64_t time_us, typeProcessInterfaceS
 }
 
 /**
-  * @brief  запуск ДЭП командой регистра RUN (4096)
-	* @param  dep_ptr указатель на структуру управления
-	* @param  time_us время МК us
-	* @param  meas_num W - нужное число измерений, R - оставшееся число измерений (+0)
+  * @brief  запуск ДИР 
+	* @param  dir_ptr указатель на структуру управления
   */
 void dir_start(typeDIRStruct *dir_ptr) 
 {
-	uint16_t data[6];
+	uint16_t data[1];
 	data[0] = 1;
 	ib_run_transaction(dir_ptr->ib, dir_ptr->id, MB_F_CODE_6, 0x4000, 1, data);
 }
@@ -125,7 +123,9 @@ int8_t dir_frame_forming(typeDIRStruct* dir_ptr)
 			for (i=0; i<2; i++){
 				dir_read_fifo(dir_ptr, &rec_tmp);
 				memcpy((uint8_t*)&dir_ptr->frame.dir.meas[i], (uint8_t*)&rec_tmp, sizeof(typeDIRMeas));
+				_dir_rec_rev( &dir_ptr->frame.dir.meas[i]);
 			}
+			
 			//
 			dir_ptr->frame.raw.crc16 = frame_crc16((uint8_t*)&dir_ptr->frame.raw, sizeof(typeFrameStruct) - 2);
 			//
@@ -233,7 +233,7 @@ void _dir_rec_rev(typeDIRMeas* dir_rec)
 }
 
 /**
-  * @brief  инициализация циклограмм работы с ДЭП
+  * @brief  инициализация циклограмм работы с ДИР
 	* @param  dir_ptr указатель на структуру управления
   */
 void dir_meas_cycl_init(typeDIRStruct* dir_ptr)
@@ -270,7 +270,7 @@ int32_t dir_meas_cycl_read_data(void* ctrl_struct, uint8_t* data)
 }
 
 /**
-  * @brief  формирование кадра ДЭП
+  * @brief  формирование кадра ДИР
 	* @param  ctrl_struct указатель на структуру управления
   */
 int32_t dir_meas_cycl_frame_forming(void* ctrl_struct, uint8_t* data)
