@@ -164,12 +164,18 @@ void mpp_on_off(typeMPPStruct* mpp_ptr, uint32_t on_off)
 	* @param  on_off 1 - включение, 0 - отключение
   */
 void mpp_constant_mode(typeMPPStruct* mpp_ptr, uint32_t on_off)
-{
+{	
+	// ---new version---
+	// uint16_t data[2];
+	// mpp_ptr->mode = (on_off) ? 0x01 : 0x00;
+	// data[0] = __REV16((mpp_ptr->channel << 8) | (255));
+	// data[1] = __REV16(mpp_ptr->mode); 
+	// ib_run_transaction(mpp_ptr->ib, mpp_ptr->id, 16, 0, 2, data);
+	// ---for old mpp---
 	uint16_t data[2];
-	mpp_ptr->mode = (on_off) ? 0x01 : 0x00;
-	data[0] = __REV16((mpp_ptr->channel << 8) | (255));
-	data[1] = __REV16(mpp_ptr->mode); 
-	ib_run_transaction(mpp_ptr->ib, mpp_ptr->id, 16, 0, 2, data);
+	mpp_ptr->const_mode = (on_off) ? 0xAAAA : 0x0000;
+	data[0] = __REV16(mpp_ptr->const_mode);
+	ib_run_transaction(mpp_ptr->ib, 0xFF, MB_F_CODE_106, 0x5555, 2, data);
 }
 
 /**
