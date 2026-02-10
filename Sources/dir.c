@@ -92,6 +92,17 @@ int8_t dir_process_tp(void* ctrl_struct, uint64_t time_us, typeProcessInterfaceS
 }
 
 /**
+  * @brief  запуск ДИР 
+	* @param  dir_ptr указатель на структуру управления
+  */
+void dir_start(typeDIRStruct *dir_ptr) 
+{
+	uint16_t data[1];
+	data[0] = 1;
+	ib_run_transaction(dir_ptr->ib, dir_ptr->id, MB_F_CODE_6, 0x4000, 1, data);
+}
+
+/**
   * @brief  формирование кадра ДИР c выставлением флага
 	* @param  dir_ptr указатель на структуру управления
 	* @retval  статус: 0 - кадр не сформирован, 1 - кадр сформирован
@@ -112,7 +123,9 @@ int8_t dir_frame_forming(typeDIRStruct* dir_ptr)
 			for (i=0; i<2; i++){
 				dir_read_fifo(dir_ptr, &rec_tmp);
 				memcpy((uint8_t*)&dir_ptr->frame.dir.meas[i], (uint8_t*)&rec_tmp, sizeof(typeDIRMeas));
+				_dir_rec_rev( &dir_ptr->frame.dir.meas[i]);
 			}
+			
 			//
 			dir_ptr->frame.raw.crc16 = frame_crc16((uint8_t*)&dir_ptr->frame.raw, sizeof(typeFrameStruct) - 2);
 			//
@@ -132,10 +145,10 @@ int8_t dir_frame_forming(typeDIRStruct* dir_ptr)
 void dir_constant_mode(typeDIRStruct* dir_ptr, uint32_t on_off)
 {
 	uint16_t data[2];
-	dir_ptr->const_mode = (on_off) ? 0x55AA : 0x5500;
-	data[0] = __REV16(0x00);
+	dir_ptr->const_mode = (on_off) ? 0x01 : 0x00;
+	data[0] = __REV16((2 << 8) | (255));
 	data[1] = __REV16(dir_ptr->const_mode); 
-	ib_run_transaction(dir_ptr->ib, 0xFF, 106, 0, 2, data);
+	ib_run_transaction(dir_ptr->ib, dir_ptr->id, 16, 0, 2, data);
 }
 
 /**
@@ -146,14 +159,14 @@ void dir_read_data(typeDIRStruct *dir_ptr)
 {
 	uint8_t in_data[32] = {0};
 	//
-	if (ib_run_transaction(dir_ptr->ib, dir_ptr->id, MB_F_CODE_3, 2000, 10, NULL) > 0) {
+	if (ib_run_transaction(dir_ptr->ib, dir_ptr->id, MB_F_CODE_3, 0x4001, 10, NULL) > 0) {
 		ib_get_answer_data(dir_ptr->ib, in_data, 2*(10));
 		//
 		if (dir_write_fifo(dir_ptr, (typeDIRMeas*)&in_data[0]) > 0) {
 			
 		}
 		else{
-			//обработка ошибки перезаполениня буфера
+			//обработка ошибки переполнения буфера
 		}
 	}
 	else {
@@ -220,7 +233,7 @@ void _dir_rec_rev(typeDIRMeas* dir_rec)
 }
 
 /**
-  * @brief  инициализация циклограмм работы с ДЭП
+  * @brief  инициализация циклограмм работы с ДИР
 	* @param  dir_ptr указатель на структуру управления
   */
 void dir_meas_cycl_init(typeDIRStruct* dir_ptr)
@@ -229,8 +242,20 @@ void dir_meas_cycl_init(typeDIRStruct* dir_ptr)
 	// циклограмма инициализации ДИР
 	cyclo_init(&dir_ptr->meas_cyclo, "dir");
 	//
+	cyclo_add_step(&dir_ptr->meas_cyclo, dir_meas_cycl_struct_start, (void*)dir_ptr, 0, 1500, data);
 	cyclo_add_step(&dir_ptr->meas_cyclo, dir_meas_cycl_read_data, (void*)dir_ptr, 0, 100, data);
 	cyclo_add_step(&dir_ptr->meas_cyclo, dir_meas_cycl_frame_forming, (void*)dir_ptr, 0, 0, data);
+}
+
+/**
+  * @brief  обертка функция для согласования типов
+	* @param  ctrl_struct указатель на структуру управления
+  */
+int32_t dir_meas_cycl_struct_start(void* ctrl_struct, uint8_t* data)
+{
+	typeDIRStruct* dir_ptr = (typeDIRStruct*) ctrl_struct;
+	dir_start(dir_ptr);
+	return 0;
 }
 
 /**
@@ -245,7 +270,7 @@ int32_t dir_meas_cycl_read_data(void* ctrl_struct, uint8_t* data)
 }
 
 /**
-  * @brief  формирование кадра ДЭП
+  * @brief  формирование кадра ДИР
 	* @param  ctrl_struct указатель на структуру управления
   */
 int32_t dir_meas_cycl_frame_forming(void* ctrl_struct, uint8_t* data)

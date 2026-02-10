@@ -94,6 +94,7 @@ int8_t dir_process_tp(void* ctrl_struct, uint64_t time_us, typeProcessInterfaceS
 int8_t dir_frame_forming(typeDIRStruct* dir_ptr);
 //
 void dir_constant_mode(typeDIRStruct* dir_ptr, uint32_t on_off);
+void dir_start(typeDIRStruct *dir_ptr);
 void dir_read_data(typeDIRStruct *dir_ptr);
 
 int8_t dir_write_fifo(typeDIRStruct *dir_ptr, typeDIRMeas* data);
@@ -102,6 +103,7 @@ int8_t dir_read_fifo(typeDIRStruct *dir_ptr, typeDIRMeas* data);
 void _dir_rec_rev(typeDIRMeas* dir_rec);
 // функции для работы циклограмы измерительного интервала
 void dir_meas_cycl_init(typeDIRStruct* dir_ptr);
+int32_t dir_meas_cycl_struct_start(void* ctrl_struct, uint8_t* data);
 int32_t dir_meas_cycl_read_data(void* ctrl_struct, uint8_t* data);
 int32_t dir_meas_cycl_frame_forming(void* ctrl_struct, uint8_t* data);
 //
