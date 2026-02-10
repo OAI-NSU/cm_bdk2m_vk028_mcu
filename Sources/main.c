@@ -22,7 +22,7 @@
 //***Общие настройки***//
 
 //версия прошивки
-#define CM_SW_VERSION 			  "0.13"
+#define CM_SW_VERSION 			  "0.14"
 // номер устройства
 #define FRAME_DEV_ID 			    218 // (218 - отработочный)
 // параметры МКО
@@ -379,9 +379,18 @@ void cm_mko_command_interface_handler(typeCMModel *cm_ptr)
               if (sa_data[1] == 0xDEAD){
                 printf("Go to test mode ");
                 // сброс ожидания запуска интервалов
-                
+                cm_reset_start_waiting(&cm);
+                // установка интервала измерения и системного интервала
+                cm_set_interval_value(&cm, 0, 5);
+                cm_set_interval_value(&cm, 1, 10);
                 // сброс ожидания включения питания
-                NVIC_SystemReset();
+                pwr_reset_init_delay(&pwr);
+                // установка включения модулей с паузой 500 мс
+                uint8_t pwr_state[PWR_CH_NUMBER] = PWR_DEFAULT_STATE;
+                uint8_t pwr_type[PWR_CH_NUMBER] = PWR_CHANNELS_TYPES;
+                for (uint8_t ch_num = 0; ch_num < PWR_CH_NUMBER; ch_num++){
+                  if (pwr_type[ch_num] != PWR_CH_CTRL_NU) pwr_queue_put_cmd(&pwr, 500, ch_num, pwr_state[ch_num], 0);
+                }
               }
               //
               mko_rt_write_to_subaddr(cm_ptr->mko_rt_ptr, CM_MKO_SA_TECH_CMD, (uint16_t*)sa_data);

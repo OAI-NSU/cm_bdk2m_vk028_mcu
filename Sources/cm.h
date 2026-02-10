@@ -192,7 +192,7 @@ typedef  struct
 	//
 	uint64_t intervals_us[CM_INTERV_NUMBER];
 	uint64_t last_call_interval_times[CM_INTERV_NUMBER];
-	uint64_t first_call_time[CM_INTERV_NUMBER];
+	uint64_t first_call_interval_us[CM_INTERV_NUMBER];
 	uint8_t first_call_status[CM_INTERV_NUMBER];
 	//
 	uint8_t meas_event, speedy_event;
@@ -276,6 +276,7 @@ int8_t cm_read_fifo(typeCMModel* cm_ptr, typeFrameStruct* frame);
 int8_t cm_interval_processor(typeCMModel* cm_ptr, uint8_t interval_id, uint64_t time_us);
 // Управление настройками работы ЦМ
 void cm_set_interval_value(typeCMModel* cm_ptr, uint16_t interval_number, uint16_t interval_value_s);
+void cm_reset_start_waiting(typeCMModel* cm_ptr);
 void cm_set_speedy_mode(typeCMModel* cm_ptr, uint16_t speedy_mask, uint16_t time_s);
 //работа с системном кадром
 void cm_frame_forming(typeCMModel* cm_ptr);

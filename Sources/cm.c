@@ -98,7 +98,7 @@ void cm_reset_parameters(typeCMModel* cm_ptr)
 		cm_ptr->ctrl.intervals_us[i] = (uint64_t)(floor(interv_default_values[i] * 1000000));
 		cm_ptr->ctrl.last_call_interval_times[i] = 0;
 		cm_ptr->ctrl.first_call_status[i] = 0;
-		cm_ptr->ctrl.first_call_time[i] = (uint64_t)(floor(interv_start_time[i] * 1000000));
+		cm_ptr->ctrl.first_call_interval_us[i] = (uint64_t)(floor(interv_start_time[i] * 1000000));
 	}
 	cm_ptr->ctrl.meas_event = 0x00;
 	cm_ptr->ctrl.speedy_event = 0x00;
@@ -465,7 +465,7 @@ int8_t cm_interval_processor(typeCMModel* cm_ptr, uint8_t interval_id, uint64_t 
 	uint64_t last_call_interval = (time_us - cm_ptr->ctrl.last_call_interval_times[interval_id]);
 	//
 	if (cm_ptr->ctrl.first_call_status[interval_id] == 0){
-		interval_us = cm_ptr->ctrl.first_call_time[interval_id];
+		interval_us = cm_ptr->ctrl.first_call_interval_us[interval_id];
 	}
 	else{
 		interval_us = cm_ptr->ctrl.intervals_us[interval_id];
@@ -508,6 +508,17 @@ void cm_set_interval_value(typeCMModel* cm_ptr, uint16_t interval_number, uint16
 		case(CM_1S_INTERVAL):
 			//
 			break;
+	}
+}
+
+/**
+  * @brief  сброс ожидания запуска интервалов
+	* @param  cm_ptr указатель на структуру управления
+  */
+void cm_reset_start_waiting(typeCMModel* cm_ptr)
+{
+	for(uint8_t interval_num = 0; interval_num < CM_INTERV_NUMBER; interval_num++){
+		cm_ptr->ctrl.first_call_interval_us[interval_num] = 100000 + interval_num*100000;
 	}
 }
 

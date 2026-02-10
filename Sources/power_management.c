@@ -226,6 +226,15 @@ void pwr_on_off_by_num(typePower* pwr_ptr, uint8_t num, uint8_t state)
 }
 
 /**
+  * @brief  сброс стартового ожидания включения каналов питания
+	* @param  pwr_ptr указатель на структуру управления
+  */
+void pwr_reset_init_delay(typePower* pwr_ptr)
+{
+	pwr_ptr->initialisation_timeout_ms = PWR_INIT_TIMEOUT_MS;
+}
+
+/**
   * @brief  сброс статуса модуля питания
 	* @param  pwr_ptr указатель на структуру управления
   */
