@@ -37,8 +37,8 @@ typedef enum PWR_CH
 
 #define PWR_DEFAULT_STATE       {PWR_CH_ON, PWR_CH_ON, PWR_CH_ON, PWR_CH_ON, PWR_CH_ON, PWR_CH_ON, PWR_CH_ON, PWR_CH_ON, PWR_CH_ON, PWR_CH_ON, PWR_CH_ON, PWR_CH_ON}  // изначальное состояние каналов
 #define PWR_DEFAULT_HALF_SET    {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}   // изначальное состояние каналов
-#define PWR_INIT_TIMEOUT_MS     (10000)
-#define PWR_DEFAULT_DELAY       {0, 0, 0, 1000, 1200, 1400, 1600, 1800, 2000, 2200, 2400, 200}  // задержка на включение каждого следующего устройства при включении питания после PWR_MAIN_PWR_DELAY_MS (мс)
+#define PWR_INIT_TIMEOUT_MS     (60000)
+#define PWR_DEFAULT_DELAY       {0, 0, 0, 60000 + 1000, 60000 + 1200, 60000 + 1400, 60000 + 1600, 60000 + 1800, 60000 + 2000, 60000 + 2200, 60000 + 2400, 200}  // задержка на включение каждого следующего устройства при включении питания после PWR_MAIN_PWR_DELAY_MS (мс)
 
 // Конфигурация GPIO - это массив из 5ти GPIO: 
 // PWR_CH_CTRL_NU - не используются

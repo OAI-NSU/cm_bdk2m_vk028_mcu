@@ -22,11 +22,11 @@
 //***Общие настройки***//
 
 //версия прошивки
-#define CM_SW_VERSION 			  "0.12"
+#define CM_SW_VERSION 			  "0.13"
 // номер устройства
 #define FRAME_DEV_ID 			    218 // (218 - отработочный)
 // параметры МКО
-#define MKO_ADDRESS_DEFAULT 	29 // 0 - адрес берется с разъема, не 0 - адрес МКО (29 - по умолчанию)
+#define MKO_ADDRESS_DEFAULT 	0 // 0 - адрес берется с разъема, не 0 - адрес МКО (29 - по умолчанию)
 
 //
 extern uint32_t SystemCoreClock;  /*100_000_000*/
@@ -87,9 +87,11 @@ int main() {
 void __main_init_peripheral_modules(void)
 {
 	// настройки каналов МПП
-	uint32_t mpp_offsets_array[MPP_DEV_NUM] = MPP_DEFAULT_OFFSET;
+	uint32_t mpp_offsets_array[MPP_DEV_NUM] = MPP_DEF_OFFSET;
 	uint32_t mpp_ib_id[MPP_DEV_NUM] = MPP_ID;
 	uint32_t mpp_ch_num[MPP_DEV_NUM] = MPP_CHANNENUM_ID;
+  float mpp_ch_k[MPP_DEV_NUM] = MPP_CHAN_K;
+	float mpp_ch_b[MPP_DEV_NUM] = MPP_CHAN_B;
 	uint8_t uint8_var = 0;
 	/**
 	 * @brief  цикл используется для последовательной нумерации схожих устройств. Использование необязательно
@@ -102,7 +104,9 @@ void __main_init_peripheral_modules(void)
 					mpp_ch_num[uint8_var], 
 					mpp_offsets_array[uint8_var], 
 					cm.ib_ptr, 
-					&cm.global_frame_num);
+					&cm.global_frame_num,
+          MPP_TYPE_MPP);
+    mpp_set_calibr(&mpp[uint8_var], mpp_ch_k[uint8_var], mpp_ch_b[uint8_var]);
 	}
 	dep_init(&dep, DEP, 10, FRAME_DEV_ID, DEP+1, cm.ib_ptr, &cm.global_frame_num);
 	dir_init(&dir, DIR, 10, FRAME_DEV_ID, DIR+1, cm.ib_ptr, &cm.global_frame_num);
@@ -362,8 +366,21 @@ void cm_mko_command_interface_handler(typeCMModel *cm_ptr)
               //
               if (sa_data[1] == 0xA55A){
                 printf("Rst by WDG ");
-                Timer_Delay(1, 10000);
+                Timer_Delay(1, 30000);
                 printf("Error\n");
+                NVIC_SystemReset();
+              }
+              //
+              mko_rt_write_to_subaddr(cm_ptr->mko_rt_ptr, CM_MKO_SA_TECH_CMD, (uint16_t*)sa_data);
+              break;
+            case (TCMD_GO_TO_TEST_MODE):
+              sa_data[0] |= 0x0100;
+              //
+              if (sa_data[1] == 0xDEAD){
+                printf("Go to test mode ");
+                // сброс ожидания запуска интервалов
+                
+                // сброс ожидания включения питания
                 NVIC_SystemReset();
               }
               //

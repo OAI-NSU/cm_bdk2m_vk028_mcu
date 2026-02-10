@@ -16,7 +16,14 @@
 #define DIR_EVENT_MEAS_INTERVAL_START       (1<<0)
 #define DIR_EVENT_MEAS_INTERVAL_DATA_READY  (1<<1)
 
-#define DIR_REC_FIFO_DEPTH 4
+#define DIR_DEVICE_NUM    (5)
+#define DIR_MEAS_NUM      (2)
+
+#define DIR_REC_FIFO_DEPTH (DIR_MEAS_NUM*2)
+
+#define DIR_MB_ADDR_RUN   (0x4000)
+#define DIR_MB_ADDR_DATA  (0x4001)
+
 
 // структуры данных
 #pragma pack(push, 2)
@@ -35,22 +42,28 @@ typedef struct
   */
 typedef struct
 {
-    typeDIRSingleMeas ch[5];
+    typeDIRSingleMeas ch[DIR_DEVICE_NUM];
 }typeDIRMeas;                 //20
 
 /** 
-  * @brief  структура кадар ДИР
+  * @brief  структура кадр ДИР
   */
 typedef union{
   typeFrameStruct raw;
   struct{
-    uint16_t header[5];
+    uint16_t header[5];         //+0
     //
-    typeDIRMeas meas[2]; //+10-50
+    typeDIRMeas meas[DIR_MEAS_NUM];
     //
-    uint16_t reserve[6]; //+50
+#if ((52-4*DIR_MEAS_NUM*DIR_DEVICE_NUM) == 0)
     //
-    uint16_t crc16;
+#elif (((52-4*DIR_MEAS_NUM*DIR_DEVICE_NUM) > 0) && ((52-4*DIR_MEAS_NUM*DIR_DEVICE_NUM) < 52))
+    uint8_t reserve[52-4*DIR_MEAS_NUM*DIR_DEVICE_NUM];
+#else
+    #warning "typeDIRFrameUnion reserve field size error."
+#endif
+    //
+    uint16_t crc16;             //+60
   } dir;
 }typeDIRFrameUnion;
 
@@ -74,6 +87,10 @@ typedef struct
   // data
   typeDIRFrameUnion frame;
   uint8_t frame_data_ready;  // флаг готовности данных в памяти на отправку в другой процесс
+  //
+  typeDIRMeas last_data;
+  float voltage[DIR_DEVICE_NUM];
+  float temp[DIR_DEVICE_NUM];
   // fifo для обработки данных ДЭП
   typeDIRMeas rec_fifo[DIR_REC_FIFO_DEPTH];
   uint8_t rec_num, rec_max;
@@ -94,7 +111,6 @@ int8_t dir_process_tp(void* ctrl_struct, uint64_t time_us, typeProcessInterfaceS
 int8_t dir_frame_forming(typeDIRStruct* dir_ptr);
 //
 void dir_constant_mode(typeDIRStruct* dir_ptr, uint32_t on_off);
-void dir_start(typeDIRStruct *dir_ptr);
 void dir_read_data(typeDIRStruct *dir_ptr);
 
 int8_t dir_write_fifo(typeDIRStruct *dir_ptr, typeDIRMeas* data);
@@ -103,7 +119,7 @@ int8_t dir_read_fifo(typeDIRStruct *dir_ptr, typeDIRMeas* data);
 void _dir_rec_rev(typeDIRMeas* dir_rec);
 // функции для работы циклограмы измерительного интервала
 void dir_meas_cycl_init(typeDIRStruct* dir_ptr);
-int32_t dir_meas_cycl_struct_start(void* ctrl_struct, uint8_t* data);
+int32_t dir_meas_cycl_run(void* ctrl_struct, uint8_t* data);
 int32_t dir_meas_cycl_read_data(void* ctrl_struct, uint8_t* data);
 int32_t dir_meas_cycl_frame_forming(void* ctrl_struct, uint8_t* data);
 //

@@ -40,7 +40,7 @@ enum cm_interval_list
 	CM_INTERV_NUMBER
 };
 #define DEFAULT_CM_INTERV_VALUES_S					{3600, 600, 2, 30, 120, 720, 1}
-#define DEFAULT_CM_DEFAULT_START_TIME_S				{14, 14, 14, 15, 14, 60, 15}
+#define DEFAULT_CM_DEFAULT_START_TIME_S				{125, 126, 127, 128, 129, 130, 131}
 
 #define CM_EVENT_MEAS_INTERVAL_START       			(1<<0)
 #define CM_EVENT_MEAS_INTERVAL_DATA_READY  			(1<<1)
@@ -95,7 +95,7 @@ enum mko_cmd_list
 enum mko_tech_cmd_list
 {
 	TCMD_CHECK_MIRROR, TCMD_CHECK_MEM, TCMD_ANY_FRAME_READ, TCMD_SET_OPERATION_TIME,
-	TCMD_SET_STM, TCMD_SET_IB, TCMD_SET_MKO_BC, TCMD_WD_MCU_RESET,
+	TCMD_SET_STM, TCMD_SET_IB, TCMD_SET_MKO_BC, TCMD_WD_MCU_RESET, TCMD_GO_TO_TEST_MODE,
 	TCMD_NUMBER
 };
 
@@ -105,15 +105,6 @@ enum mko_tech_cmd_list
 #define CM_STATUS_FULL_MEM_READ	 		(1<<2)
 #define CM_STATUS_CFG_LOADED	 		(1<<3)
 #define CM_STATUS_FULL			 		(0xFFFF)  //! переменная для полной установки/очистки статуса
-
-// Настройки каналов МПП
-#define MPP_DEV_NUM (8)
-// !!настройки уставкии МПП (offset) количество должно совпадать с MPP_DEV_NUM!!
-#define MPP_DEFAULT_OFFSET {0xF02, 0xF03, 0xF04, 0xF05, 0xF06, 0xF07, 0xF08, 0xF09}
-// адреса МПП на внутренней шине
-#define MPP_ID {4, 5, 6, 7, 8, 9, 3, 3}
-// номер канала, используемый устройством МПП
-#define MPP_CHANNENUM_ID {0, 0, 0, 0, 0, 0, 0, 1}
 
 //структуры кадров
 #pragma pack(push, 2)

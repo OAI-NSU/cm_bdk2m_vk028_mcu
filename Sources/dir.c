@@ -50,6 +50,12 @@ void dir_reset_parameters(typeDIRStruct* dir_ptr)
 	dir_ptr->meas_event_num = 0;
 	dir_ptr->interval_ms = DIR_DEFAULT_INTERVAL_MS;
 	dir_ptr->const_mode = 0;
+	//
+	memset((uint8_t*)&dir_ptr->last_data, 0xFE, sizeof(typeDIRSingleMeas)*DIR_DEVICE_NUM);
+	for(uint8_t num = 0; num<DIR_DEVICE_NUM; num++){
+		dir_ptr->voltage[num] = 0.0;
+		dir_ptr->temp[num] = 0.0;
+	}
 }
 
 /**
@@ -92,17 +98,6 @@ int8_t dir_process_tp(void* ctrl_struct, uint64_t time_us, typeProcessInterfaceS
 }
 
 /**
-  * @brief  запуск ДИР 
-	* @param  dir_ptr указатель на структуру управления
-  */
-void dir_start(typeDIRStruct *dir_ptr) 
-{
-	uint16_t data[1];
-	data[0] = 1;
-	ib_run_transaction(dir_ptr->ib, dir_ptr->id, MB_F_CODE_6, 0x4000, 1, data);
-}
-
-/**
   * @brief  формирование кадра ДИР c выставлением флага
 	* @param  dir_ptr указатель на структуру управления
 	* @retval  статус: 0 - кадр не сформирован, 1 - кадр сформирован
@@ -112,7 +107,7 @@ int8_t dir_frame_forming(typeDIRStruct* dir_ptr)
     uint8_t i;
 		typeDIRMeas rec_tmp;
 		//
-		if (dir_ptr->rec_num >= 2){
+		if (dir_ptr->rec_num >= DIR_MEAS_NUM){
 			dir_ptr->frame.raw.label = 0x0FF1;
 			dir_ptr->frame.raw.definer = frame_definer(0, dir_ptr->device_number, NULL, dir_ptr->frame_type);
 			dir_ptr->frame.raw.num = ((*dir_ptr->global_frame_num_ptr)++)&0xFFFF;
@@ -120,12 +115,10 @@ int8_t dir_frame_forming(typeDIRStruct* dir_ptr)
 			//
 			memset((uint8_t*)&dir_ptr->frame.raw.data[0], 0xFE, sizeof(dir_ptr->frame.raw.data));
 			//
-			for (i=0; i<2; i++){
+			for (i=0; i<DIR_MEAS_NUM; i++){
 				dir_read_fifo(dir_ptr, &rec_tmp);
 				memcpy((uint8_t*)&dir_ptr->frame.dir.meas[i], (uint8_t*)&rec_tmp, sizeof(typeDIRMeas));
-				_dir_rec_rev( &dir_ptr->frame.dir.meas[i]);
 			}
-			
 			//
 			dir_ptr->frame.raw.crc16 = frame_crc16((uint8_t*)&dir_ptr->frame.raw, sizeof(typeFrameStruct) - 2);
 			//
@@ -152,17 +145,36 @@ void dir_constant_mode(typeDIRStruct* dir_ptr, uint32_t on_off)
 }
 
 /**
+  * @brief  запуск измерения
+	* @param  dir_ptr указатель на структуру управления
+	* @param  on_off 1 - включение, 0 - отключение
+  */
+void dir_run(typeDIRStruct* dir_ptr)
+{
+	uint16_t data[2];
+	data[0] = __REV16(0x0001);
+	ib_run_transaction(dir_ptr->ib, dir_ptr->id, MB_F_CODE_6, DIR_MB_ADDR_RUN, 1, data);
+}
+
+/**
   * @brief  чтение данных
 	* @param  dir_ptr указатель на структуру управления
   */
 void dir_read_data(typeDIRStruct *dir_ptr)
 {
-	uint8_t in_data[32] = {0};
+	uint8_t in_data[sizeof(typeDIRSingleMeas)*DIR_DEVICE_NUM] = {0};
 	//
-	if (ib_run_transaction(dir_ptr->ib, dir_ptr->id, MB_F_CODE_3, 0x4001, 10, NULL) > 0) {
-		ib_get_answer_data(dir_ptr->ib, in_data, 2*(10));
+	if (ib_run_transaction(dir_ptr->ib, dir_ptr->id, MB_F_CODE_3, DIR_MB_ADDR_DATA, sizeof(typeDIRSingleMeas)*DIR_DEVICE_NUM/2, NULL) > 0) {
+		ib_get_answer_data(dir_ptr->ib, in_data, sizeof(typeDIRSingleMeas)*DIR_DEVICE_NUM);
 		//
-		if (dir_write_fifo(dir_ptr, (typeDIRMeas*)&in_data[0]) > 0) {
+		memcpy((uint8_t*)&dir_ptr->last_data, in_data, sizeof(typeDIRSingleMeas)*DIR_DEVICE_NUM);
+		for(uint8_t num = 0; num<DIR_DEVICE_NUM; num++){
+			_dir_rec_rev(&dir_ptr->last_data);
+			dir_ptr->voltage[num] = (dir_ptr->last_data.ch[num].dir & 0x03FF) * 0.0391;
+			dir_ptr->temp[num] = dir_ptr->last_data.ch[num].temp;
+		}
+		//
+		if (dir_write_fifo(dir_ptr, &dir_ptr->last_data) > 0) {
 			
 		}
 		else{
@@ -223,13 +235,10 @@ int8_t dir_read_fifo(typeDIRStruct* dir_ptr, typeDIRMeas* data)
  */
 void _dir_rec_rev(typeDIRMeas* dir_rec)
 {  
-    uint16_t data[32];
-    uint8_t i = 0;
-    memcpy((uint8_t *)data, (uint8_t *)dir_rec, sizeof(typeDIRMeas));
-    for (i=0; i<(sizeof(typeDIRMeas)/2); i++) {
-        data[i] = __REV16(data[i]);
+    for (uint8_t num=0; num<(DIR_DEVICE_NUM); num++) {
+        dir_rec->ch[num].dir = __REV16(dir_rec->ch[num].dir);
+        dir_rec->ch[num].temp = __REV16(dir_rec->ch[num].temp);
     }
-    memcpy((uint8_t *)dir_rec, (uint8_t *)data, sizeof(typeDIRMeas));
 }
 
 /**
@@ -242,7 +251,8 @@ void dir_meas_cycl_init(typeDIRStruct* dir_ptr)
 	// циклограмма инициализации ДИР
 	cyclo_init(&dir_ptr->meas_cyclo, "dir");
 	//
-	cyclo_add_step(&dir_ptr->meas_cyclo, dir_meas_cycl_struct_start, (void*)dir_ptr, 0, 1500, data);
+	cyclo_add_step(&dir_ptr->meas_cyclo, CYCLO_DO_NOTHING, (void*)dir_ptr, 0, 100, data);
+	cyclo_add_step(&dir_ptr->meas_cyclo, dir_meas_cycl_run, (void*)dir_ptr, 0, 1500, data);
 	cyclo_add_step(&dir_ptr->meas_cyclo, dir_meas_cycl_read_data, (void*)dir_ptr, 0, 100, data);
 	cyclo_add_step(&dir_ptr->meas_cyclo, dir_meas_cycl_frame_forming, (void*)dir_ptr, 0, 0, data);
 }
@@ -251,10 +261,10 @@ void dir_meas_cycl_init(typeDIRStruct* dir_ptr)
   * @brief  обертка функция для согласования типов
 	* @param  ctrl_struct указатель на структуру управления
   */
-int32_t dir_meas_cycl_struct_start(void* ctrl_struct, uint8_t* data)
+int32_t dir_meas_cycl_run(void* ctrl_struct, uint8_t* data)
 {
 	typeDIRStruct* dir_ptr = (typeDIRStruct*) ctrl_struct;
-	dir_start(dir_ptr);
+	dir_run(dir_ptr);
 	return 0;
 }
 

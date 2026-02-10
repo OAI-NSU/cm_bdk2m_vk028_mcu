@@ -135,7 +135,7 @@
         <SetRegEntry>
           <Number>0</Number>
           <Key>DLGTARM</Key>
-          <Name>(1010=-1,-1,-1,-1,0)(1007=-1,-1,-1,-1,0)(1008=3464,472,3840,708,0)(1009=-1,-1,-1,-1,0)(1012=567,213,1034,514,0)</Name>
+          <Name>(1010=-1,-1,-1,-1,0)(1007=-1,-1,-1,-1,0)(1008=3881,472,4257,708,0)(1009=-1,-1,-1,-1,0)(1012=567,213,1034,514,0)</Name>
         </SetRegEntry>
         <SetRegEntry>
           <Number>0</Number>
@@ -268,7 +268,7 @@
         <Ww>
           <count>23</count>
           <WinNumber>1</WinNumber>
-          <ItemText>adc</ItemText>
+          <ItemText>dir</ItemText>
         </Ww>
       </WatchWindow1>
       <WatchWindow2>
@@ -633,11 +633,6 @@
           <WinNumber>1</WinNumber>
           <ItemText>cm.sw_version</ItemText>
         </Ww>
-        <Ww>
-          <count>18</count>
-          <WinNumber>1</WinNumber>
-          <ItemText>adc</ItemText>
-        </Ww>
       </WatchWindow1>
       <WatchWindow2>
         <Ww>
@@ -879,7 +874,7 @@
       <GroupNumber>1</GroupNumber>
       <FileNumber>11</FileNumber>
       <FileType>1</FileType>
-      <tvExp>1</tvExp>
+      <tvExp>0</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
       <PathWithFileName>.\Sources\power_management.c</PathWithFileName>
