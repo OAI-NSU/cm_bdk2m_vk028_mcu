@@ -541,7 +541,20 @@ void cm_frame_forming(typeCMModel* cm_ptr)
 	memset((uint8_t*)cm_ptr->frame.raw.data, 0xFEFE, sizeof(cm_ptr->frame.raw.data));
 	//
 	for (i=0; i<PWR_CH_NUMBER; i++) {
-		cm_ptr->frame.sys.body.currents[i] = cm_ptr->pwr_ptr->ch[i].current_mA;
+		if (i == PWR_CM1){
+			if (cm_ptr->half_set_num){
+				cm_ptr->frame.sys.body.currents[i] = cm_ptr->pwr_ptr->ch[i+1].current_mA;
+			}
+			else{
+				cm_ptr->frame.sys.body.currents[i] = cm_ptr->pwr_ptr->ch[i].current_mA;
+			}
+		}
+		else if (i == PWR_CM2){
+			cm_ptr->frame.sys.body.currents[i] = 0;
+		}
+		else{
+			cm_ptr->frame.sys.body.currents[i] = cm_ptr->pwr_ptr->ch[i].current_mA;
+		}
 	}
 	cm_ptr->frame.sys.body.power_status = cm_ptr->pwr_ptr->status;
 	cm_ptr->frame.sys.body.power_state = cm_ptr->pwr_ptr->state;
