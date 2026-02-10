@@ -26,7 +26,7 @@
 // номер устройства
 #define FRAME_DEV_ID 			    218 // (218 - отработочный)
 // параметры МКО
-#define MKO_ADDRESS_DEFAULT 	0 // 0 - адрес берется с разъема, не 0 - адрес МКО (29 - по умолчанию)
+#define MKO_ADDRESS_DEFAULT 	29 // 0 - адрес берется с разъема, не 0 - адрес МКО (29 - по умолчанию)
 
 //
 extern uint32_t SystemCoreClock;  /*100_000_000*/
@@ -288,7 +288,7 @@ void cm_mko_command_interface_handler(typeCMModel *cm_ptr)
             case (CMD_CM_RESET):
               if (sa_data[1] == 0xA55A){
                 printf("Rst by WDG ");
-                Timer_Delay(1, 100000);
+                Timer_Delay(1, 10000); // не более 11 сек
                 printf("Error\n");
                 NVIC_SystemReset();
               }
@@ -298,7 +298,7 @@ void cm_mko_command_interface_handler(typeCMModel *cm_ptr)
 				}
           break;
         case CM_MKO_SA_ARCH_REQUEST_CM:
-          if ((sa_data[0] == 0xABBA) && (sa_data[1] == 0xACDC)){
+          if ((sa_data[0] == 0) && (sa_data[1] == 0) && (sa_data[2] == 0) && (sa_data[3] == 0) ){
             fr_mem_read_data_frame(&cm_ptr->mem, (uint8_t*)&frame);
             mko_rt_write_to_subaddr(&mko_rt, CM_MKO_SA_ARCH_READ_CM, (uint16_t*)&frame);
           }

@@ -362,9 +362,16 @@ void mb_frame_form_packet(typeModBusFrameStruct* frame_ptr, uint8_t* data, uint1
 				break;
 			case 111:
 			case 106:
-				data[2] = (frame_ptr->data[0] >> 8) & 0xFF;
-				data[3] = (frame_ptr->data[1] >> 0) & 0xFF;
+				// 
+				// data[2] = (frame_ptr->data[0] >> 8) & 0xFF;
+				// data[3] = (frame_ptr->data[1] >> 0) & 0xFF;
 				l = 4;
+				// --- for support old mpp ---
+				data[2] = (frame_ptr->reg_addr >> 8) & 0xFF;
+				data[3] = (frame_ptr->reg_addr >> 0) & 0xFF;
+				data[4] = (frame_ptr->data[0] >> 8) & 0xFF;
+				data[5] = (frame_ptr->data[0] >> 0) & 0xFF;
+				l = 6;
 				break;
 		}
 	}
@@ -474,6 +481,12 @@ uint16_t mb_frame_calc_crc16(typeModBusFrameStruct* frame_ptr)
 				break;
 			case 111:
 			case 106:
+				// 
+				// crc16 = __modbusb_crc16((uint8_t*)&frame_ptr->data[0] + 1, 1, crc16);
+				// crc16 = __modbusb_crc16((uint8_t*)&frame_ptr->data[0], 1, crc16);
+				// --- for support old mpp ---
+				crc16 = __modbusb_crc16((uint8_t*)&frame_ptr->reg_addr + 1, 1, crc16); 
+				crc16 = __modbusb_crc16((uint8_t*)&frame_ptr->reg_addr + 0, 1, crc16);
 				crc16 = __modbusb_crc16((uint8_t*)&frame_ptr->data[0] + 1, 1, crc16);
 				crc16 = __modbusb_crc16((uint8_t*)&frame_ptr->data[0], 1, crc16);
 				break;
